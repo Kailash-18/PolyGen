@@ -18,8 +18,9 @@ class Settings(BaseModel):
         "http://127.0.0.1:3000",
         "*"
     ]
-    # AI Pipeline Settings
     DEFAULT_DECIMATION_TARGET: int = 10000
     ENABLE_GPU: bool = True
+    MODEL_CACHE_DIR: Path = BASE_DIR / "weights"
+    MOCK_3D_AI: bool = False
 
 settings = Settings()
