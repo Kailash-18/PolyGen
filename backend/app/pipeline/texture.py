@@ -30,3 +30,44 @@ class TextureEngine:
 
         img_arr = np.clip(base_col + noise, 0, 255).astype(np.uint8)
         return Image.fromarray(img_arr, mode="RGB")
+
+    def _generate_normal_map(self) -> Image.Image:
+        res = self.resolution
+        normals = np.zeros((res, res, 3), dtype=np.uint8)
+        normals[:, :, 0] = 128
+        normals[:, :, 1] = 128
+        normals[:, :, 2] = 255
+
+        perturbation = np.random.randint(-8, 8, (res, res, 2), dtype=np.int16)
+        normals[:, :, :2] = np.clip(normals[:, :, :2] + perturbation, 0, 255).astype(np.uint8)
+        return Image.fromarray(normals, mode="RGB")
+
+    def _generate_roughness_map(self, prompt: str) -> Image.Image:
+        p = prompt.lower()
+        val = 45 if ("sword" in p or "metal" in p) else 140
+        arr = np.full((self.resolution, self.resolution), val, dtype=np.uint8)
+        noise = np.random.randint(-12, 12, (self.resolution, self.resolution), dtype=np.int16)
+        return Image.fromarray(np.clip(arr + noise, 0, 255).astype(np.uint8), mode="L")
+
+    def _generate_metalness_map(self, prompt: str) -> Image.Image:
+        p = prompt.lower()
+        val = 220 if ("sword" in p or "metal" in p or "shield" in p) else 15
+        arr = np.full((self.resolution, self.resolution), val, dtype=np.uint8)
+        return Image.fromarray(arr, mode="L")
+
+    def synthesize_pbr_maps(self, prompt: str, mesh: trimesh.Trimesh = None) -> dict[str, Image.Image]:
+        return {
+            "albedo": self._generate_albedo_map(prompt),
+            "normal": self._generate_normal_map(),
+            "roughness": self._generate_roughness_map(prompt),
+            "metalness": self._generate_metalness_map(prompt)
+        }
+
+    def apply_textures_to_mesh(self, mesh: trimesh.Trimesh, pbr_maps: dict[str, Image.Image]) -> trimesh.Trimesh:
+        textured = mesh.copy()
+        albedo = pbr_maps["albedo"]
+        textured.visual = trimesh.visual.TextureVisuals(
+            uv=mesh.visual.uv if hasattr(mesh.visual, "uv") and mesh.visual.uv is not None else None,
+            image=albedo
+        )
+        return textured
