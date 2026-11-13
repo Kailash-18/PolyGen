@@ -16,20 +16,21 @@ class GeometryEngine:
     def _create_sword(self) -> trimesh.Trimesh:
         blade = trimesh.creation.box(extents=[0.14, 0.035, 2.4])
         blade.apply_translation([0, 0, 1.2])
-
         blade_tip = trimesh.creation.cone(radius=0.08, height=0.45, sections=16)
         blade_tip.apply_translation([0, 0, 2.4])
-
         guard = trimesh.creation.box(extents=[0.75, 0.08, 0.09])
         guard.apply_translation([0, 0, 0.0])
-
         handle = trimesh.creation.cylinder(radius=0.042, height=0.65, sections=24)
         handle.apply_translation([0, 0, -0.36])
-
         pommel = trimesh.creation.icosphere(subdivisions=2, radius=0.095)
         pommel.apply_translation([0, 0, -0.74])
-
         gem = trimesh.creation.icosphere(subdivisions=2, radius=0.055)
         gem.apply_translation([0, 0.045, 0.0])
-
         return trimesh.util.concatenate([blade, blade_tip, guard, handle, pommel, gem])
+
+    def _create_shield(self) -> trimesh.Trimesh:
+        body = trimesh.creation.cylinder(radius=0.9, height=0.08, sections=36)
+        rim = trimesh.creation.torus(major_radius=0.92, minor_radius=0.05, major_sections=36, minor_sections=16)
+        boss = trimesh.creation.icosphere(subdivisions=3, radius=0.28)
+        boss.apply_translation([0, 0, 0.06])
+        return trimesh.util.concatenate([body, rim, boss])
