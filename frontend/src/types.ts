@@ -1,0 +1,36 @@
+export interface MeshStats {
+  vertices: number;
+  faces: number;
+  is_watertight: boolean;
+  bounds: number[][] | null;
+  volume: number;
+  center_of_mass: number[];
+}
+
+export interface DecimationStats {
+  before_faces: number;
+  after_faces: number;
+  decimation_ratio: number;
+  reduction_percentage: string;
+}
+
+export interface ModelMetadata {
+  model_id: string;
+  prompt: string;
+  duration_seconds: number;
+  stats: MeshStats;
+  decimation: DecimationStats;
+  urls: {
+    glb: string;
+    obj: string;
+  };
+}
+
+export interface ProgressUpdate {
+  step: number;
+  total_steps: number;
+  stage: string;
+  progress: number;
+  message: string;
+  result?: ModelMetadata;
+}
