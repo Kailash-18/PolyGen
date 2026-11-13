@@ -12,26 +12,24 @@ class GeometryEngine:
         self.device_info = detect_compute_device(device)
         self.device = self.device_info["device"]
         self.enable_neural = enable_neural
-        print(f"[GeometryEngine] Initialized on device: {self.device}")
 
-    def _marching_cubes_sdf(self, sdf_func, bounds=((-1, 1), (-1, 1), (-1, 1)), resolution=48) -> trimesh.Trimesh:
-        """Extracts triangular isosurface from volumetric Signed Distance Function grid"""
-        x = np.linspace(bounds[0][0], bounds[0][1], resolution)
-        y = np.linspace(bounds[1][0], bounds[1][1], resolution)
-        z = np.linspace(bounds[2][0], bounds[2][1], resolution)
-        X, Y, Z = np.meshgrid(x, y, z, indexing="ij")
-        values = sdf_func(X, Y, Z)
+    def _create_sword(self) -> trimesh.Trimesh:
+        blade = trimesh.creation.box(extents=[0.14, 0.035, 2.4])
+        blade.apply_translation([0, 0, 1.2])
 
-        try:
-            from skimage import measure
-            verts, faces, normals, _ = measure.marching_cubes(values, level=0.0, spacing=(
-                (bounds[0][1] - bounds[0][0]) / (resolution - 1),
-                (bounds[1][1] - bounds[1][0]) / (resolution - 1),
-                (bounds[2][1] - bounds[2][0]) / (resolution - 1),
-            ))
-            verts[:, 0] += bounds[0][0]
-            verts[:, 1] += bounds[1][0]
-            verts[:, 2] += bounds[2][0]
-            return trimesh.Trimesh(vertices=verts, faces=faces, vertex_normals=normals)
-        except ImportError:
-            return trimesh.creation.icosphere(subdivisions=3, radius=1.0)
+        blade_tip = trimesh.creation.cone(radius=0.08, height=0.45, sections=16)
+        blade_tip.apply_translation([0, 0, 2.4])
+
+        guard = trimesh.creation.box(extents=[0.75, 0.08, 0.09])
+        guard.apply_translation([0, 0, 0.0])
+
+        handle = trimesh.creation.cylinder(radius=0.042, height=0.65, sections=24)
+        handle.apply_translation([0, 0, -0.36])
+
+        pommel = trimesh.creation.icosphere(subdivisions=2, radius=0.095)
+        pommel.apply_translation([0, 0, -0.74])
+
+        gem = trimesh.creation.icosphere(subdivisions=2, radius=0.055)
+        gem.apply_translation([0, 0.045, 0.0])
+
+        return trimesh.util.concatenate([blade, blade_tip, guard, handle, pommel, gem])
