@@ -1016,3 +1016,9 @@ class AssemblyEngine:
     def generate_mechanical_relationships(cls, model: AssemblyModel) -> List[AssemblyRelationship]:
         part_ids = {p.id for p in model.parts}
         return [r for r in model.relationships if r.from_part in part_ids and r.to_part in part_ids]
+
+
+    @classmethod
+    def generate_fasteners_and_details(cls, model: AssemblyModel) -> List[AssemblyDetail]:
+        part_ids = {p.id for p in model.parts}
+        return [d for d in model.details if d.parent_id in part_ids]
