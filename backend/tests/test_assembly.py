@@ -40,3 +40,28 @@ def test_robotic_arm_structure():
     arm = AssemblyEngine.create_robotic_arm_assembly("arm-test")
     assert arm.id == "arm-test"
     assert len(arm.parts) >= 6
+
+
+def test_calculate_explosion_poses():
+    drone = AssemblyEngine.create_drone_assembly()
+    
+    # Progress 0.0 -> all offsets must be 0
+    poses_zero = AssemblyEngine.calculate_explosion_pose(drone, 0.0)
+    assert len(poses_zero) == len(drone.parts)
+    for p in poses_zero:
+        assert p.offset == [0.0, 0.0, 0.0]
+
+    # Progress 1.0 -> non-root parts should have non-zero offsets
+    poses_full = AssemblyEngine.calculate_explosion_pose(drone, 1.0)
+    for p in poses_full:
+        part_meta = next(item for item in drone.parts if item.id == p.part_id)
+        if part_meta.explode_dist > 0.0:
+            assert any(abs(c) > 0.0 for c in p.offset)
+
+def test_component_clearance_and_collision_bounding():
+    """Verify that expanded components maintain non-intersecting centroids."""
+    drone = AssemblyEngine.create_drone_assembly()
+    poses = AssemblyEngine.calculate_explosion_pose(drone, 0.8)
+    positions = [p.current_position for p in poses]
+    pos_tuples = [tuple(p) for p in positions]
+    assert len(pos_tuples) == len(set(pos_tuples)), "Parts should not occupy duplicate centroid coordinates"
