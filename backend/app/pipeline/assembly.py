@@ -105,3 +105,141 @@ class AssemblyEngine:
             layer_boost = 1.0 + 0.15 * abs(p.layer)
             trajectories[p.id] = [round(c * layer_boost, 4) for c in norm_dir]
         return trajectories
+
+    @classmethod
+    def create_broadsword_assembly(cls, model_id: str = "sword-01") -> AssemblyModel:
+        parts = [
+            AssemblyPart(
+                id="blade_core",
+                name="Adamantine Blade Spine",
+                type="structure",
+                shape="box",
+                size=[14.0, 720.0, 3.5],
+                position=[0.0, 360.0, 0.0],
+                color="#cbd5e1",
+                material="metal",
+                explodeDir=[0.0, 1.0, 0.0],
+                explodeDist=1.2,
+                function="High-carbon edge retention central cutting blade",
+                layer=2
+            ),
+            AssemblyPart(
+                id="plasma_channel",
+                name="Energized Plasma Fuller",
+                type="sensor",
+                shape="box",
+                size=[5.0, 600.0, 4.2],
+                position=[0.0, 340.0, 0.0],
+                color="#06b6d4",
+                material="glass",
+                explodeDir=[0.0, 0.9806, 0.1961],
+                explodeDist=1.5,
+                function="Superconducting ion channel running along blade centre",
+                layer=3
+            ),
+            AssemblyPart(
+                id="crossguard",
+                name="Aegis Titanium Crossguard",
+                type="structure",
+                shape="rounded_box",
+                size=[180.0, 24.0, 28.0],
+                position=[0.0, 0.0, 0.0],
+                color="#334155",
+                material="aluminum",
+                explodeDir=[0.0, 0.0, 0.0],
+                explodeDist=0.0,
+                cornerRadius=4.0,
+                function="Dual-wing defensive handguard and hilt anchor",
+                layer=0
+            ),
+            AssemblyPart(
+                id="power_cell",
+                name="Kyber Sub-Hilt Battery Unit",
+                type="power_source",
+                shape="cylinder",
+                size=[22.0, 50.0, 22.0],
+                position=[0.0, -32.0, 0.0],
+                color="#38bdf8",
+                material="pcb",
+                explodeDir=[0.0, -1.0, 0.0],
+                explodeDist=0.8,
+                function="Micro-fusion cell supplying high-discharge plasma current",
+                layer=-1
+            ),
+            AssemblyPart(
+                id="hilt_grip",
+                name="Ergonomic Grip Sleeve",
+                type="interface",
+                shape="cylinder",
+                size=[28.0, 140.0, 28.0],
+                position=[0.0, -95.0, 0.0],
+                color="#1e293b",
+                material="rubber",
+                explodeDir=[0.0, -1.0, 0.0],
+                explodeDist=1.4,
+                function="Shock-absorbing composite wrap with tactile indexing",
+                layer=-2
+            ),
+            AssemblyPart(
+                id="pommel",
+                name="Counterweight Magnetic Pommel",
+                type="structure",
+                shape="sphere",
+                size=[42.0, 42.0, 42.0],
+                position=[0.0, -186.0, 0.0],
+                color="#94a3b8",
+                material="metal",
+                explodeDir=[0.0, -1.0, 0.0],
+                explodeDist=2.1,
+                function="Mass counterbalance and magnetic sheath locking point",
+                layer=-3
+            )
+        ]
+
+        details = [
+            AssemblyDetail(
+                parentId="crossguard",
+                shape="disc",
+                size=[16.0, 4.0, 16.0],
+                position=[0.0, 0.0, 15.0],
+                color="#0ea5e9",
+                material="glossy_plastic"
+            ),
+            AssemblyDetail(
+                parentId="crossguard",
+                shape="slots",
+                size=[60.0, 4.0, 8.0],
+                position=[0.0, 8.0, 0.0],
+                color="#1e293b",
+                material="metal",
+                count=4
+            ),
+            AssemblyDetail(
+                parentId="blade_core",
+                shape="torus",
+                size=[18.0, 3.0, 18.0],
+                position=[0.0, 120.0, 0.0],
+                color="#38bdf8",
+                material="aluminum"
+            )
+        ]
+
+        relationships = [
+            AssemblyRelationship(id="rel_power_blade", from_part="power_cell", to_part="plasma_channel", rel_type="powers", description="Ionizing discharge bus"),
+            AssemblyRelationship(id="rel_mount_blade", from_part="crossguard", to_part="blade_core", rel_type="mounts", description="Press-fit mortise and tenon tang lock"),
+            AssemblyRelationship(id="rel_mount_hilt", from_part="crossguard", to_part="hilt_grip", rel_type="supports", description="Threaded hilt retention rod"),
+            AssemblyRelationship(id="rel_lock_pommel", from_part="hilt_grip", to_part="pommel", rel_type="mounts", description="M16 retaining pommel nut")
+        ]
+
+        return AssemblyModel(
+            id=model_id,
+            name="Cybernetic Broadsword",
+            units="mm",
+            overallSize=[180.0, 950.0, 42.0],
+            parts=parts,
+            details=details,
+            relationships=relationships,
+            primary_axis="y"
+        )
+
+
