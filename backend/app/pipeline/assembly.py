@@ -95,3 +95,13 @@ class AssemblyEngine:
         }
         vec = axis_map.get(axis.lower(), [0.0, 1.0, 0.0])
         return [round(v * magnitude, 4) for v in vec]
+
+    @staticmethod
+    def _order_explode_vectors(parts: List[AssemblyPart], primary_axis: str = "y") -> Dict[str, List[float]]:
+        trajectories: Dict[str, List[float]] = {}
+        for p in parts:
+            base_dir = p.explode_dir if p.explode_dir else [0.0, 1.0, 0.0]
+            norm_dir = AssemblyEngine._normalize(base_dir)
+            layer_boost = 1.0 + 0.15 * abs(p.layer)
+            trajectories[p.id] = [round(c * layer_boost, 4) for c in norm_dir]
+        return trajectories
