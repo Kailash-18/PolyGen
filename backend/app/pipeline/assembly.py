@@ -243,3 +243,121 @@ class AssemblyEngine:
         )
 
 
+
+    @classmethod
+    def create_shield_assembly(cls, model_id: str = "shield-01") -> AssemblyModel:
+        parts = [
+            AssemblyPart(
+                id="outer_rim",
+                name="Segmented Ballistic Rim",
+                type="structure",
+                shape="torus",
+                size=[540.0, 36.0, 540.0],
+                position=[0.0, 0.0, 0.0],
+                rotation=[90.0, 0.0, 0.0],
+                color="#334155",
+                material="metal",
+                explodeDir=[0.0, 0.0, 1.0],
+                explodeDist=0.9,
+                function="Perimeter kinetic deflection band absorbing peripheral strikes",
+                layer=1
+            ),
+            AssemblyPart(
+                id="face_plate",
+                name="Central Convex Deflector Shell",
+                type="cover",
+                shape="dome",
+                size=[490.0, 490.0, 45.0],
+                position=[0.0, 0.0, 12.0],
+                rotation=[0.0, 0.0, 0.0],
+                color="#1e3a8a",
+                material="aluminum",
+                explodeDir=[0.0, 0.0, 1.0],
+                explodeDist=1.6,
+                function="Hydroformed convex alloy plate deflecting incoming kinetic energy",
+                layer=2
+            ),
+            AssemblyPart(
+                id="kinetic_boss",
+                name="Central Kinetic Boss Core",
+                type="mechanism",
+                shape="cylinder",
+                size=[140.0, 40.0, 140.0],
+                position=[0.0, 0.0, 32.0],
+                rotation=[90.0, 0.0, 0.0],
+                color="#f59e0b",
+                material="glossy_plastic",
+                explodeDir=[0.0, 0.0, 1.0],
+                explodeDist=2.3,
+                function="Harmonic shock dampener dissipating direct frontal blasts",
+                layer=3
+            ),
+            AssemblyPart(
+                id="backing_frame",
+                name="Arm Support Backing Truss",
+                type="structure",
+                shape="plate",
+                size=[460.0, 460.0, 12.0],
+                position=[0.0, 0.0, -10.0],
+                color="#475569",
+                material="metal",
+                explodeDir=[0.0, 0.0, -1.0],
+                explodeDist=1.1,
+                function="Rigid internal skeleton anchoring arm brackets and dampeners",
+                layer=-1
+            ),
+            AssemblyPart(
+                id="forearm_straps",
+                name="Padded Arm Retention Straps",
+                type="interface",
+                shape="arch",
+                size=[180.0, 80.0, 50.0],
+                position=[0.0, -40.0, -35.0],
+                rotation=[0.0, 0.0, 90.0],
+                color="#0f172a",
+                material="fabric",
+                explodeDir=[0.0, 0.0, -1.0],
+                explodeDist=1.9,
+                function="Dual adjustable hook-and-loop forearm stability harness",
+                layer=-2
+            )
+        ]
+
+        details = [
+            AssemblyDetail(
+                parentId="outer_rim",
+                shape="cylinder",
+                size=[12.0, 6.0, 12.0],
+                position=[0.0, 260.0, 0.0],
+                color="#94a3b8",
+                material="metal"
+            ),
+            AssemblyDetail(
+                parentId="kinetic_boss",
+                shape="torus",
+                size=[110.0, 8.0, 110.0],
+                position=[0.0, 0.0, 50.0],
+                color="#fbbf24",
+                material="metal"
+            )
+        ]
+
+        relationships = [
+            AssemblyRelationship(id="rel_rim_backing", from_part="backing_frame", to_part="outer_rim", rel_type="supports", description="Radial structural spars"),
+            AssemblyRelationship(id="rel_face_backing", from_part="backing_frame", to_part="face_plate", rel_type="mounts", description="Countersunk Allen bolt array"),
+            AssemblyRelationship(id="rel_boss_face", from_part="face_plate", to_part="kinetic_boss", rel_type="mounts", description="Central locking hub"),
+            AssemblyRelationship(id="rel_strap_backing", from_part="backing_frame", to_part="forearm_straps", rel_type="mounts", description="Riveted steel retaining tabs")
+        ]
+
+        return AssemblyModel(
+            id=model_id,
+            name="Aegis Kinetic Energy Shield",
+            units="mm",
+            overallSize=[540.0, 540.0, 95.0],
+            parts=parts,
+            details=details,
+            relationships=relationships,
+            primary_axis="z"
+        )
+
+
