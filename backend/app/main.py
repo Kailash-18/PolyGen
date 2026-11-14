@@ -45,6 +45,9 @@ class GenerationRequest(BaseModel):
     target_faces: int = Field(default=10000, description="Target polygon count after decimation")
     detail_level: str = Field(default="high", description="Geometry detail: low, medium, high")
 
+class ExplodeRequest(BaseModel):
+    progress: float = Field(default=0.75, ge=0.0, le=1.0, description="Exploded view trajectory factor 0.0 to 1.0")
+
 @app.get("/api/health")
 async def health_check():
     gpu_info = detect_compute_device()
@@ -90,6 +93,16 @@ async def generate_asset(req: GenerationRequest):
 @app.get("/api/models/{model_id}/assembly", response_model=AssemblyModel)
 async def get_model_assembly(model_id: str):
     return AssemblyEngine.get_assembly(model_id)
+
+@app.post("/api/models/{model_id}/assembly/explode")
+async def calculate_assembly_explode(model_id: str, req: ExplodeRequest):
+    assembly = AssemblyEngine.get_assembly(model_id)
+    poses = AssemblyEngine.calculate_explosion_pose(assembly, req.progress)
+    return {
+        "model_id": model_id,
+        "progress": req.progress,
+        "poses": [p.model_dump() for p in poses]
+    }
 
 @app.websocket("/ws/generate")
 async def websocket_generate(websocket: WebSocket):
