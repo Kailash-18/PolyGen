@@ -1,6 +1,6 @@
 """
 PolyGen - Generative Text-to-3D Asset Pipeline
-FastAPI Backend Server Entrypoint
+FastAPI Backend Server Entrypoint with 3D Assembly Kinematics
 """
 
 import time
@@ -13,17 +13,19 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from app.core.config import settings
+from app.core.device import detect_compute_device
 from app.pipeline.geometry import GeometryEngine
 from app.pipeline.optimizer import MeshOptimizer
+from app.pipeline.texture import TextureEngine
 from app.pipeline.exporter import AssetExporter
+from app.pipeline.assembly import AssemblyEngine, AssemblyModel, ExplosionPose
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    description="Multi-stage Text-to-3D AI Generation & Optimization API"
+    description="Multi-stage Text-to-3D AI Generation & 3D Assembly Kinematics API"
 )
 
-# Enable CORS for React frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -32,35 +34,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve generated 3D files (GLB, OBJ, textures) statically
-app.mount("/outputs", StaticFiles(directory=str(settings.OUTPUTS_DIR)), name="outputs")
-
-# Initialize Pipeline Engines
 geometry_engine = GeometryEngine()
 mesh_optimizer = MeshOptimizer(target_polycount=settings.DEFAULT_DECIMATION_TARGET)
+texture_engine = TextureEngine(resolution=512)
 asset_exporter = AssetExporter(output_root=settings.OUTPUTS_DIR)
+app.mount("/outputs", StaticFiles(directory=str(settings.OUTPUTS_DIR)), name="outputs")
 
 class GenerationRequest(BaseModel):
-    prompt: str = Field(..., example="A rusted medieval broadsword with a glowing blue sapphire in the hilt")
+    prompt: str = Field(..., json_schema_extra={"example": "A rusted medieval broadsword with a glowing blue sapphire in the hilt"})
     target_faces: int = Field(default=10000, description="Target polygon count after decimation")
     detail_level: str = Field(default="high", description="Geometry detail: low, medium, high")
 
+class ExplodeRequest(BaseModel):
+    progress: float = Field(default=0.75, ge=0.0, le=1.0, description="Exploded view trajectory factor 0.0 to 1.0")
+
 @app.get("/api/health")
 async def health_check():
-    gpu_info = {"cuda_available": False, "device_name": "CPU"}
-    try:
-        import torch
-        if torch.cuda.is_available():
-            gpu_info = {
-                "cuda_available": True,
-                "device_name": torch.cuda.get_device_name(0),
-                "device_count": torch.cuda.device_count(),
-                "memory_allocated_mb": round(torch.cuda.memory_allocated(0) / (1024 * 1024), 2),
-                "memory_reserved_mb": round(torch.cuda.memory_reserved(0) / (1024 * 1024), 2),
-            }
-    except ImportError:
-        pass
-
+    gpu_info = detect_compute_device()
     return {
         "status": "healthy",
         "service": settings.PROJECT_NAME,
@@ -71,25 +61,21 @@ async def health_check():
 
 @app.post("/api/generate")
 async def generate_asset(req: GenerationRequest):
-    """Synchronous generation endpoint"""
     start_time = time.time()
     model_id = str(uuid.uuid4())[:8]
 
-    # Stage 1: Geometry Generation
     raw_mesh = geometry_engine.generate_mesh(req.prompt, req.detail_level)
-
-    # Stage 2: Mesh Optimization & QEM Decimation
     cleaned_mesh = mesh_optimizer.clean_and_repair(raw_mesh)
     decimated_mesh, decimation_stats = mesh_optimizer.decimate(cleaned_mesh, target_faces=req.target_faces)
     uv_mesh = mesh_optimizer.compute_uv_unwrapping(decimated_mesh)
 
-    # Stage 3: Packaging & GLB Export
-    export_info = asset_exporter.export_asset(uv_mesh, model_id)
-    mesh_stats = mesh_optimizer.get_mesh_stats(uv_mesh)
+    pbr_maps = texture_engine.synthesize_pbr_maps(req.prompt, uv_mesh)
+    textured_mesh = texture_engine.apply_textures_to_mesh(uv_mesh, pbr_maps)
 
+    export_info = asset_exporter.export_asset(textured_mesh, model_id, pbr_maps=pbr_maps)
+    mesh_stats = mesh_optimizer.get_mesh_stats(textured_mesh)
     duration = round(time.time() - start_time, 2)
 
-    # Save metadata JSON with model
     meta = {
         "model_id": model_id,
         "prompt": req.prompt,
@@ -101,18 +87,37 @@ async def generate_asset(req: GenerationRequest):
             "obj": export_info["obj_url"]
         }
     }
-    meta_path = settings.OUTPUTS_DIR / model_id / "metadata.json"
-    with open(meta_path, "w", encoding="utf-8") as f:
-        json.dump(meta, f, indent=2)
-
+    asset_exporter.save_metadata(model_id, meta)
     return meta
+
+@app.get("/api/models/{model_id}/assembly", response_model=AssemblyModel)
+async def get_model_assembly(model_id: str):
+    return AssemblyEngine.get_assembly(model_id)
+
+@app.post("/api/models/{model_id}/assembly/explode")
+async def calculate_assembly_explode(model_id: str, req: ExplodeRequest):
+    assembly = AssemblyEngine.get_assembly(model_id)
+    poses = AssemblyEngine.calculate_explosion_pose(assembly, req.progress)
+    return {
+        "model_id": model_id,
+        "progress": req.progress,
+        "poses": [p.model_dump() for p in poses]
+    }
+
+@app.get("/api/assemblies")
+async def list_sample_assemblies():
+    return {
+        "assemblies": [
+            AssemblyEngine.create_drone_assembly().model_dump(by_alias=True),
+            AssemblyEngine.create_broadsword_assembly().model_dump(by_alias=True),
+            AssemblyEngine.create_shield_assembly().model_dump(by_alias=True),
+            AssemblyEngine.create_chair_assembly().model_dump(by_alias=True),
+            AssemblyEngine.create_robotic_arm_assembly().model_dump(by_alias=True)
+        ]
+    }
 
 @app.websocket("/ws/generate")
 async def websocket_generate(websocket: WebSocket):
-    """
-    Real-time streaming generation endpoint that sends progress updates
-    at each stage of the multi-stage 3D pipeline.
-    """
     await websocket.accept()
     try:
         data = await websocket.receive_text()
@@ -124,7 +129,6 @@ async def websocket_generate(websocket: WebSocket):
         model_id = str(uuid.uuid4())[:8]
         start_time = time.time()
 
-        # Step 1: Prompt Parsing & Geometry
         await websocket.send_json({
             "step": 1,
             "total_steps": 4,
@@ -132,10 +136,8 @@ async def websocket_generate(websocket: WebSocket):
             "progress": 25,
             "message": f"Ingesting prompt '{prompt}' into 3D geometry engine..."
         })
-        time.sleep(0.3)
         raw_mesh = geometry_engine.generate_mesh(prompt, detail_level)
 
-        # Step 2: Mesh Optimization & QEM Decimation
         await websocket.send_json({
             "step": 2,
             "total_steps": 4,
@@ -143,22 +145,20 @@ async def websocket_generate(websocket: WebSocket):
             "progress": 55,
             "message": f"Applying Quadric Error Metrics decimation down to ~{target_faces} polygons..."
         })
-        time.sleep(0.3)
         cleaned_mesh = mesh_optimizer.clean_and_repair(raw_mesh)
         decimated_mesh, decimation_stats = mesh_optimizer.decimate(cleaned_mesh, target_faces=target_faces)
 
-        # Step 3: UV Unwrapping
         await websocket.send_json({
             "step": 3,
             "total_steps": 4,
-            "stage": "UV Parameterization",
+            "stage": "UV Parameterization & Texturing",
             "progress": 80,
-            "message": "Computing conformal UV texture coordinates..."
+            "message": "Computing conformal UV coordinates and synthesizing PBR materials..."
         })
-        time.sleep(0.3)
         uv_mesh = mesh_optimizer.compute_uv_unwrapping(decimated_mesh)
+        pbr_maps = texture_engine.synthesize_pbr_maps(prompt, uv_mesh)
+        textured_mesh = texture_engine.apply_textures_to_mesh(uv_mesh, pbr_maps)
 
-        # Step 4: GLB Packaging & Asset Export
         await websocket.send_json({
             "step": 4,
             "total_steps": 4,
@@ -166,8 +166,8 @@ async def websocket_generate(websocket: WebSocket):
             "progress": 95,
             "message": "Exporting binary GLB & OBJ ready for Unreal/Unity & Three.js..."
         })
-        export_info = asset_exporter.export_asset(uv_mesh, model_id)
-        mesh_stats = mesh_optimizer.get_mesh_stats(uv_mesh)
+        export_info = asset_exporter.export_asset(textured_mesh, model_id, pbr_maps=pbr_maps)
+        mesh_stats = mesh_optimizer.get_mesh_stats(textured_mesh)
         duration = round(time.time() - start_time, 2)
 
         result_payload = {
@@ -181,11 +181,7 @@ async def websocket_generate(websocket: WebSocket):
                 "obj": export_info["obj_url"]
             }
         }
-
-        # Save metadata
-        meta_path = settings.OUTPUTS_DIR / model_id / "metadata.json"
-        with open(meta_path, "w", encoding="utf-8") as f:
-            json.dump(result_payload, f, indent=2)
+        asset_exporter.save_metadata(model_id, result_payload)
 
         await websocket.send_json({
             "step": 4,
@@ -195,15 +191,13 @@ async def websocket_generate(websocket: WebSocket):
             "message": "3D Asset successfully generated and optimized!",
             "result": result_payload
         })
-
     except WebSocketDisconnect:
-        print("[WebSocket] Client disconnected")
+        pass
     except Exception as e:
         await websocket.send_json({"error": str(e)})
 
 @app.get("/api/models")
 async def list_models():
-    """List all previously generated models"""
     models = []
     if settings.OUTPUTS_DIR.exists():
         for p in settings.OUTPUTS_DIR.iterdir():
@@ -211,11 +205,10 @@ async def list_models():
                 meta_file = p / "metadata.json"
                 if meta_file.exists():
                     try:
-                        with open(meta_file, "r", encoding="utf-8") as f:
-                            models.append(json.load(f))
+                        with open(meta_file, "r", encoding="utf-8") as meta_f:
+                            models.append(json.load(meta_f))
                     except Exception:
                         pass
-    # Sort latest first
     models.reverse()
     return {"models": models}
 
@@ -224,5 +217,5 @@ async def get_model(model_id: str):
     meta_file = settings.OUTPUTS_DIR / model_id / "metadata.json"
     if not meta_file.exists():
         raise HTTPException(status_code=404, detail="Model not found")
-    with open(meta_file, "r", encoding="utf-8") as f:
-        return json.load(f)
+    with open(meta_file, "r", encoding="utf-8") as meta_f:
+        return json.load(meta_f)
