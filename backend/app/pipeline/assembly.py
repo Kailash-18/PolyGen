@@ -971,3 +971,42 @@ class AssemblyEngine:
         return cls.create_drone_assembly(model_id=model_id_or_prompt)
 
 
+
+    @classmethod
+    def calculate_explosion_pose(cls, model: AssemblyModel, progress: float) -> List[ExplosionPose]:
+        t = max(0.0, min(1.0, progress))
+        poses: List[ExplosionPose] = []
+        max_dim = max(model.overall_size) * 0.8
+
+        for p in model.parts:
+            dx = p.explode_dir[0] * p.explode_dist * max_dim * t
+            dy = p.explode_dir[1] * p.explode_dist * max_dim * t
+            dz = p.explode_dir[2] * p.explode_dist * max_dim * t
+
+            current_pos = [
+                round(p.position[0] + dx, 3),
+                round(p.position[1] + dy, 3),
+                round(p.position[2] + dz, 3)
+            ]
+            offset = [round(dx, 3), round(dy, 3), round(dz, 3)]
+
+            poses.append(ExplosionPose(
+                part_id=p.id,
+                current_position=current_pos,
+                offset=offset,
+                progress=t
+            ))
+
+        return poses
+
+
+    @classmethod
+    def generate_mechanical_relationships(cls, model: AssemblyModel) -> List[AssemblyRelationship]:
+        part_ids = {p.id for p in model.parts}
+        return [r for r in model.relationships if r.from_part in part_ids and r.to_part in part_ids]
+
+
+    @classmethod
+    def generate_fasteners_and_details(cls, model: AssemblyModel) -> List[AssemblyDetail]:
+        part_ids = {p.id for p in model.parts}
+        return [d for d in model.details if d.parent_id in part_ids]
