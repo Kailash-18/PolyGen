@@ -542,3 +542,265 @@ class AssemblyEngine:
         )
 
 
+
+    @classmethod
+    def create_drone_assembly(cls, model_id: str = "drone-01") -> AssemblyModel:
+        parts = [
+            AssemblyPart(
+                id="main_chassis",
+                name="Central Carbon Monocoque Chassis",
+                type="structure",
+                shape="rounded_box",
+                size=[140.0, 24.0, 140.0],
+                position=[0.0, 0.0, 0.0],
+                color="#1e2229",
+                material="plastic",
+                explodeDir=[0.0, 0.0, 0.0],
+                explodeDist=0.0,
+                cornerRadius=12.0,
+                function="Main structural fuselage housing core avionics",
+                layer=0
+            ),
+            AssemblyPart(
+                id="top_canopy",
+                name="Aerodynamic Cowling Shell",
+                type="cover",
+                shape="dome",
+                size=[130.0, 22.0, 130.0],
+                position=[0.0, 13.0, 0.0],
+                color="#0f5fff",
+                material="glossy_plastic",
+                explodeDir=[0.0, 1.0, 0.0],
+                explodeDist=1.6,
+                function="Upper protective cowling and airflow deflector",
+                layer=1
+            ),
+            AssemblyPart(
+                id="flight_controller_pcb",
+                name="Flight Controller & ESC Unit",
+                type="controller",
+                shape="box",
+                size=[60.0, 4.0, 60.0],
+                position=[0.0, 2.0, 0.0],
+                color="#1d6639",
+                material="pcb",
+                explodeDir=[0.0, 1.0, 0.0],
+                explodeDist=0.8,
+                function="Autonomous navigation MCU and motor speed controllers",
+                layer=1
+            ),
+            AssemblyPart(
+                id="lipo_battery",
+                name="4S 5200mAh LiPo Power Pack",
+                type="power_source",
+                shape="rounded_box",
+                size=[80.0, 28.0, 45.0],
+                position=[0.0, -20.0, 0.0],
+                color="#f59e0b",
+                material="rubber",
+                explodeDir=[0.0, -1.0, 0.0],
+                explodeDist=1.2,
+                cornerRadius=4.0,
+                function="5200mAh high-discharge propulsion battery",
+                layer=-1
+            ),
+            AssemblyPart(
+                id="bottom_plate",
+                name="Vibration Isolation Baseplate",
+                type="structure",
+                shape="plate",
+                size=[135.0, 3.0, 135.0],
+                position=[0.0, -13.0, 0.0],
+                color="#374151",
+                material="aluminum",
+                explodeDir=[0.0, -1.0, 0.0],
+                explodeDist=1.7,
+                function="Lower mounting deck for payload gimbal and battery bay",
+                layer=-1
+            ),
+            AssemblyPart(
+                id="arm_front_left",
+                name="Front-Left Rotor Boom",
+                type="mechanism",
+                shape="cylinder",
+                size=[18.0, 160.0, 18.0],
+                position=[-110.0, 0.0, -110.0],
+                rotation=[0.0, 45.0, 90.0],
+                color="#111827",
+                material="aluminum",
+                explodeDir=[-0.707, 0.2, -0.707],
+                explodeDist=1.5,
+                function="Outrigger arm for FL brushless propulsion pod",
+                layer=1
+            ),
+            AssemblyPart(
+                id="rotor_front_left",
+                name="FL Carbon Propeller Unit",
+                type="actuator",
+                shape="capsule",
+                size=[180.0, 12.0, 22.0],
+                position=[-190.0, 24.0, -190.0],
+                rotation=[0.0, 30.0, 0.0],
+                color="#2563eb",
+                material="plastic",
+                explodeDir=[-0.707, 0.8, -0.707],
+                explodeDist=2.2,
+                function="High-pitch aerodynamic lift propeller",
+                layer=2
+            ),
+            AssemblyPart(
+                id="arm_front_right",
+                name="Front-Right Rotor Boom",
+                type="mechanism",
+                shape="cylinder",
+                size=[18.0, 160.0, 18.0],
+                position=[110.0, 0.0, -110.0],
+                rotation=[0.0, -45.0, 90.0],
+                color="#111827",
+                material="aluminum",
+                explodeDir=[0.707, 0.2, -0.707],
+                explodeDist=1.5,
+                function="Outrigger arm for FR brushless propulsion pod",
+                layer=1
+            ),
+            AssemblyPart(
+                id="rotor_front_right",
+                name="FR Carbon Propeller Unit",
+                type="actuator",
+                shape="capsule",
+                size=[180.0, 12.0, 22.0],
+                position=[190.0, 24.0, -190.0],
+                rotation=[0.0, -30.0, 0.0],
+                color="#2563eb",
+                material="plastic",
+                explodeDir=[0.707, 0.8, -0.707],
+                explodeDist=2.2,
+                function="High-pitch counter-rotating lift propeller",
+                layer=2
+            ),
+            AssemblyPart(
+                id="arm_rear_left",
+                name="Rear-Left Rotor Boom",
+                type="mechanism",
+                shape="cylinder",
+                size=[18.0, 160.0, 18.0],
+                position=[-110.0, 0.0, 110.0],
+                rotation=[0.0, -45.0, 90.0],
+                color="#111827",
+                material="aluminum",
+                explodeDir=[-0.707, 0.2, 0.707],
+                explodeDist=1.5,
+                function="Outrigger arm for RL brushless propulsion pod",
+                layer=1
+            ),
+            AssemblyPart(
+                id="rotor_rear_left",
+                name="RL Carbon Propeller Unit",
+                type="actuator",
+                shape="capsule",
+                size=[180.0, 12.0, 22.0],
+                position=[-190.0, 24.0, 190.0],
+                rotation=[0.0, 60.0, 0.0],
+                color="#2563eb",
+                material="plastic",
+                explodeDir=[-0.707, 0.8, 0.707],
+                explodeDist=2.2,
+                function="High-pitch lift propeller",
+                layer=2
+            ),
+            AssemblyPart(
+                id="arm_rear_right",
+                name="Rear-Right Rotor Boom",
+                type="mechanism",
+                shape="cylinder",
+                size=[18.0, 160.0, 18.0],
+                position=[110.0, 0.0, 110.0],
+                rotation=[0.0, 45.0, 90.0],
+                color="#111827",
+                material="aluminum",
+                explodeDir=[0.707, 0.2, 0.707],
+                explodeDist=1.5,
+                function="Outrigger arm for RR brushless propulsion pod",
+                layer=1
+            ),
+            AssemblyPart(
+                id="rotor_rear_right",
+                name="RR Carbon Propeller Unit",
+                type="actuator",
+                shape="capsule",
+                size=[180.0, 12.0, 22.0],
+                position=[190.0, 24.0, 190.0],
+                rotation=[0.0, -60.0, 0.0],
+                color="#2563eb",
+                material="plastic",
+                explodeDir=[0.707, 0.8, 0.707],
+                explodeDist=2.2,
+                function="High-pitch counter-rotating lift propeller",
+                layer=2
+            ),
+            AssemblyPart(
+                id="gimbal_camera",
+                name="4K 3-Axis Gimbal Sensor Pod",
+                type="sensor",
+                shape="sphere",
+                size=[44.0, 44.0, 44.0],
+                position=[0.0, -32.0, -45.0],
+                color="#0a0a0c",
+                material="metal",
+                explodeDir=[0.0, -0.6, -0.8],
+                explodeDist=1.8,
+                function="High-definition aerial surveillance optics",
+                layer=-2
+            )
+        ]
+
+        details = [
+            AssemblyDetail(
+                parentId="flight_controller_pcb",
+                shape="box",
+                size=[14.0, 2.5, 14.0],
+                position=[0.0, 5.0, 0.0],
+                color="#111111",
+                material="pcb"
+            ),
+            AssemblyDetail(
+                parentId="top_canopy",
+                shape="slots",
+                size=[40.0, 2.0, 15.0],
+                position=[0.0, 24.0, -20.0],
+                color="#08080a",
+                material="plastic",
+                count=6
+            ),
+            AssemblyDetail(
+                parentId="gimbal_camera",
+                shape="torus",
+                size=[32.0, 4.0, 32.0],
+                position=[0.0, -32.0, -65.0],
+                color="#d1d5db",
+                material="aluminum"
+            )
+        ]
+
+        relationships = [
+            AssemblyRelationship(id="rel_power_fc", from_part="lipo_battery", to_part="flight_controller_pcb", rel_type="powers", description="Regulated 12V 5A power rail"),
+            AssemblyRelationship(id="rel_ctrl_fl", from_part="flight_controller_pcb", to_part="rotor_front_left", rel_type="controls", description="PWM Motor pulse bus"),
+            AssemblyRelationship(id="rel_ctrl_fr", from_part="flight_controller_pcb", to_part="rotor_front_right", rel_type="controls", description="PWM Motor pulse bus"),
+            AssemblyRelationship(id="rel_ctrl_rl", from_part="flight_controller_pcb", to_part="rotor_rear_left", rel_type="controls", description="PWM Motor pulse bus"),
+            AssemblyRelationship(id="rel_ctrl_rr", from_part="flight_controller_pcb", to_part="rotor_rear_right", rel_type="controls", description="PWM Motor pulse bus"),
+            AssemblyRelationship(id="rel_video_cam", from_part="gimbal_camera", to_part="flight_controller_pcb", rel_type="feeds", description="Digital MIPI-CSI video feed"),
+            AssemblyRelationship(id="rel_mount_canopy", from_part="main_chassis", to_part="top_canopy", rel_type="mounts", description="Snap-lock mounting pins")
+        ]
+
+        return AssemblyModel(
+            id=model_id,
+            name="Apex-Quad Industrial Autonomous Drone",
+            units="mm",
+            overallSize=[480.0, 110.0, 480.0],
+            parts=parts,
+            details=details,
+            relationships=relationships,
+            primary_axis="y"
+        )
+
+
