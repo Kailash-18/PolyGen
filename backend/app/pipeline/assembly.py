@@ -954,3 +954,20 @@ class AssemblyEngine:
         )
 
 
+
+    @classmethod
+    def get_assembly(cls, model_id_or_prompt: str) -> AssemblyModel:
+        p = model_id_or_prompt.lower()
+        if "sword" in p or "blade" in p or "knife" in p:
+            return cls.create_broadsword_assembly()
+        if "shield" in p or "aegis" in p or "armor" in p or "buckler" in p:
+            return cls.create_shield_assembly()
+        if "chair" in p or "seat" in p or "bench" in p:
+            return cls.create_chair_assembly()
+        if "drone" in p or "quadcopter" in p or "uav" in p or "plane" in p:
+            return cls.create_drone_assembly()
+        if "robot" in p or "arm" in p or "manipulator" in p or "industrial" in p:
+            return cls.create_robotic_arm_assembly()
+        return cls.create_drone_assembly(model_id=model_id_or_prompt)
+
+
