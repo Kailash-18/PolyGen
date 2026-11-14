@@ -361,3 +361,184 @@ class AssemblyEngine:
         )
 
 
+
+    @classmethod
+    def create_chair_assembly(cls, model_id: str = "chair-01") -> AssemblyModel:
+        parts = [
+            AssemblyPart(
+                id="star_base",
+                name="5-Star Reinforced Nylon Base",
+                type="structure",
+                shape="arch",
+                size=[680.0, 95.0, 680.0],
+                position=[0.0, 50.0, 0.0],
+                color="#111827",
+                material="plastic",
+                explodeDir=[0.0, -1.0, 0.0],
+                explodeDist=1.8,
+                function="High-strength glass-fiber star chassis distributing load",
+                layer=-3
+            ),
+            AssemblyPart(
+                id="gas_piston",
+                name="Class-4 Pneumatic Gas Lift Piston",
+                type="mechanism",
+                shape="cylinder",
+                size=[50.0, 240.0, 50.0],
+                position=[0.0, 180.0, 0.0],
+                color="#cbd5e1",
+                material="metal",
+                explodeDir=[0.0, -1.0, 0.0],
+                explodeDist=1.0,
+                function="Nitrogen gas cylinder controlling height and 360-swivel",
+                layer=-2
+            ),
+            AssemblyPart(
+                id="seat_mechanism",
+                name="Syncro-Tilt Control Engine",
+                type="mechanism",
+                shape="box",
+                size=[220.0, 65.0, 240.0],
+                position=[0.0, 310.0, 0.0],
+                color="#374151",
+                material="metal",
+                explodeDir=[0.0, 0.0, 0.0],
+                explodeDist=0.0,
+                function="Dual-lever recline lock and seat depth adjustment bracket",
+                layer=0
+            ),
+            AssemblyPart(
+                id="seat_cushion",
+                name="Contoured Ergonomic Seat Cushion",
+                type="interface",
+                shape="rounded_box",
+                size=[510.0, 75.0, 480.0],
+                position=[0.0, 370.0, 0.0],
+                color="#1f2937",
+                material="fabric",
+                explodeDir=[0.0, 1.0, 0.0],
+                explodeDist=0.8,
+                cornerRadius=25.0,
+                function="Molded waterfall foam reducing thigh pressure and fatigue",
+                layer=1
+            ),
+            AssemblyPart(
+                id="backrest_frame",
+                name="Breathable Mesh Spine Frame",
+                type="structure",
+                shape="frame",
+                size=[470.0, 560.0, 45.0],
+                position=[0.0, 660.0, -220.0],
+                rotation=[12.0, 0.0, 0.0],
+                color="#111827",
+                material="plastic",
+                explodeDir=[0.0, 0.6, -1.0],
+                explodeDist=1.5,
+                wall=30.0,
+                function="S-curve polypropylene frame supporting elastomeric mesh",
+                layer=2
+            ),
+            AssemblyPart(
+                id="lumbar_support",
+                name="Dynamic Lumbar Cushion Pad",
+                type="interface",
+                shape="plate",
+                size=[320.0, 140.0, 25.0],
+                position=[0.0, 520.0, -210.0],
+                color="#4b5563",
+                material="rubber",
+                explodeDir=[0.0, 0.2, -1.0],
+                explodeDist=1.8,
+                function="Height-adjustable lower spine posture stabilizer",
+                layer=3
+            ),
+            AssemblyPart(
+                id="armrest_left",
+                name="4D Soft-Touch Armrest (Left)",
+                type="interface",
+                shape="rounded_box",
+                size=[80.0, 220.0, 240.0],
+                position=[-270.0, 460.0, -40.0],
+                color="#1f2937",
+                material="rubber",
+                explodeDir=[-1.0, 0.3, 0.0],
+                explodeDist=1.4,
+                cornerRadius=15.0,
+                function="Multidirectional pivoting elbow rest with height adjustment",
+                layer=1
+            ),
+            AssemblyPart(
+                id="armrest_right",
+                name="4D Soft-Touch Armrest (Right)",
+                type="interface",
+                shape="rounded_box",
+                size=[80.0, 220.0, 240.0],
+                position=[270.0, 460.0, -40.0],
+                color="#1f2937",
+                material="rubber",
+                explodeDir=[1.0, 0.3, 0.0],
+                explodeDist=1.4,
+                cornerRadius=15.0,
+                function="Multidirectional pivoting elbow rest with height adjustment",
+                layer=1
+            ),
+            AssemblyPart(
+                id="caster_wheels",
+                name="High-Glide Dual PU Caster Set",
+                type="actuator",
+                shape="cylinder",
+                size=[65.0, 55.0, 65.0],
+                position=[0.0, 15.0, 0.0],
+                rotation=[0.0, 0.0, 90.0],
+                color="#0f172a",
+                material="rubber",
+                explodeDir=[0.0, -1.0, 0.0],
+                explodeDist=2.4,
+                function="Smooth silent rolling casters on hard and soft floors",
+                layer=-4
+            )
+        ]
+
+        details = [
+            AssemblyDetail(
+                parentId="seat_mechanism",
+                shape="cylinder",
+                size=[18.0, 120.0, 18.0],
+                position=[115.0, 310.0, 20.0],
+                rotation=[0.0, 0.0, 90.0],
+                color="#9ca3af",
+                material="aluminum"
+            ),
+            AssemblyDetail(
+                parentId="backrest_frame",
+                shape="slots",
+                size=[380.0, 440.0, 4.0],
+                position=[0.0, 660.0, -220.0],
+                color="#1e293b",
+                material="fabric",
+                count=18
+            )
+        ]
+
+        relationships = [
+            AssemblyRelationship(id="rel_piston_base", from_part="star_base", to_part="gas_piston", rel_type="supports", description="Tapered press-fit column"),
+            AssemblyRelationship(id="rel_mech_piston", from_part="gas_piston", to_part="seat_mechanism", rel_type="mounts", description="Standard 28mm gas hub receiver"),
+            AssemblyRelationship(id="rel_seat_mech", from_part="seat_mechanism", to_part="seat_cushion", rel_type="mounts", description="Steel mounting plates with 4 M6 screws"),
+            AssemblyRelationship(id="rel_back_mech", from_part="seat_mechanism", to_part="backrest_frame", rel_type="controls", description="Dual-bar spring-assisted recline linkage"),
+            AssemblyRelationship(id="rel_arm_l_seat", from_part="seat_mechanism", to_part="armrest_left", rel_type="mounts", description="Adjustable lateral slide bracket"),
+            AssemblyRelationship(id="rel_arm_r_seat", from_part="seat_mechanism", to_part="armrest_right", rel_type="mounts", description="Adjustable lateral slide bracket"),
+            AssemblyRelationship(id="rel_casters_base", from_part="star_base", to_part="caster_wheels", rel_type="mounts", description="11mm grip-ring friction stems")
+        ]
+
+        return AssemblyModel(
+            id=model_id,
+            name="Ergonomic Mesh Task Chair",
+            units="mm",
+            overallSize=[680.0, 1020.0, 680.0],
+            parts=parts,
+            details=details,
+            relationships=relationships,
+            primary_axis="y"
+        )
+
+
