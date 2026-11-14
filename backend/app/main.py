@@ -104,6 +104,18 @@ async def calculate_assembly_explode(model_id: str, req: ExplodeRequest):
         "poses": [p.model_dump() for p in poses]
     }
 
+@app.get("/api/assemblies")
+async def list_sample_assemblies():
+    return {
+        "assemblies": [
+            AssemblyEngine.create_drone_assembly().model_dump(by_alias=True),
+            AssemblyEngine.create_broadsword_assembly().model_dump(by_alias=True),
+            AssemblyEngine.create_shield_assembly().model_dump(by_alias=True),
+            AssemblyEngine.create_chair_assembly().model_dump(by_alias=True),
+            AssemblyEngine.create_robotic_arm_assembly().model_dump(by_alias=True)
+        ]
+    }
+
 @app.websocket("/ws/generate")
 async def websocket_generate(websocket: WebSocket):
     await websocket.accept()
