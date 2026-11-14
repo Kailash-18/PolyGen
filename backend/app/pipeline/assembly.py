@@ -804,3 +804,153 @@ class AssemblyEngine:
         )
 
 
+
+    @classmethod
+    def create_robotic_arm_assembly(cls, model_id: str = "robot-01") -> AssemblyModel:
+        parts = [
+            AssemblyPart(
+                id="base_pedestal",
+                name="Heavy Anchor Pedestal",
+                type="structure",
+                shape="cylinder",
+                size=[180.0, 60.0, 180.0],
+                position=[0.0, 30.0, 0.0],
+                color="#374151",
+                material="metal",
+                explodeDir=[0.0, -1.0, 0.0],
+                explodeDist=1.5,
+                function="Cast iron anchor flange bolting manipulator to work cell",
+                layer=-1
+            ),
+            AssemblyPart(
+                id="turntable_j1",
+                name="360 Turntable Rotor (J1)",
+                type="mechanism",
+                shape="cylinder",
+                size=[150.0, 75.0, 150.0],
+                position=[0.0, 97.5, 0.0],
+                color="#ea580c",
+                material="metal",
+                explodeDir=[0.0, 0.0, 0.0],
+                explodeDist=0.0,
+                function="Continuous azimuthal rotation harmonic gear drive",
+                layer=0
+            ),
+            AssemblyPart(
+                id="shoulder_boom_j2",
+                name="Primary Shoulder Boom (J2)",
+                type="mechanism",
+                shape="cylinder",
+                size=[65.0, 260.0, 65.0],
+                position=[0.0, 250.0, 30.0],
+                rotation=[25.0, 0.0, 0.0],
+                color="#9ca3af",
+                material="aluminum",
+                explodeDir=[0.0, 0.5, 0.8],
+                explodeDist=1.2,
+                function="High-torque shoulder casting lifting main arm envelope",
+                layer=1
+            ),
+            AssemblyPart(
+                id="elbow_joint_j3",
+                name="Elbow Articulator (J3)",
+                type="mechanism",
+                shape="cylinder",
+                size=[75.0, 90.0, 75.0],
+                position=[0.0, 380.0, 95.0],
+                rotation=[0.0, 0.0, 90.0],
+                color="#ea580c",
+                material="metal",
+                explodeDir=[0.0, 0.8, 0.6],
+                explodeDist=1.7,
+                function="Planetary reduction pivot for upper forearm extension",
+                layer=2
+            ),
+            AssemblyPart(
+                id="forearm_boom_j4",
+                name="Forearm Structural Tube (J4)",
+                type="structure",
+                shape="cylinder",
+                size=[50.0, 220.0, 50.0],
+                position=[0.0, 480.0, 150.0],
+                rotation=[-30.0, 0.0, 0.0],
+                color="#9ca3af",
+                material="aluminum",
+                explodeDir=[0.0, 1.0, 0.5],
+                explodeDist=2.1,
+                function="Lightweight tubular reach arm routing internal signal lines",
+                layer=3
+            ),
+            AssemblyPart(
+                id="wrist_flange_j5",
+                name="3-Axis Precision Wrist (J5/J6)",
+                type="actuator",
+                shape="cylinder",
+                size=[58.0, 60.0, 58.0],
+                position=[0.0, 580.0, 210.0],
+                rotation=[0.0, 0.0, 0.0],
+                color="#1f2937",
+                material="aluminum",
+                explodeDir=[0.0, 1.0, 0.7],
+                explodeDist=2.6,
+                function="Tri-axial orientation flange pitching and rolling end effector",
+                layer=4
+            ),
+            AssemblyPart(
+                id="pneumatic_gripper",
+                name="Parallel 2-Jaw Pneumatic Gripper",
+                type="actuator",
+                shape="rounded_box",
+                size=[70.0, 85.0, 55.0],
+                position=[0.0, 645.0, 245.0],
+                color="#0f172a",
+                material="metal",
+                explodeDir=[0.0, 1.0, 0.9],
+                explodeDist=3.2,
+                cornerRadius=6.0,
+                function="High-repeatability robotic end effector with tactile feedback",
+                layer=5
+            )
+        ]
+
+        details = [
+            AssemblyDetail(
+                parentId="base_pedestal",
+                shape="cylinder",
+                size=[14.0, 20.0, 14.0],
+                position=[60.0, 62.0, 60.0],
+                color="#9ca3af",
+                material="metal"
+            ),
+            AssemblyDetail(
+                parentId="elbow_joint_j3",
+                shape="torus",
+                size=[55.0, 8.0, 55.0],
+                position=[0.0, 380.0, 95.0],
+                rotation=[0.0, 0.0, 90.0],
+                color="#374151",
+                material="metal"
+            )
+        ]
+
+        relationships = [
+            AssemblyRelationship(id="rel_base_j1", from_part="base_pedestal", to_part="turntable_j1", rel_type="mounts", description="Crossed roller bearing ring"),
+            AssemblyRelationship(id="rel_j1_j2", from_part="turntable_j1", to_part="shoulder_boom_j2", rel_type="drives", description="Direct-drive servo gearbox"),
+            AssemblyRelationship(id="rel_j2_j3", from_part="shoulder_boom_j2", to_part="elbow_joint_j3", rel_type="transmits", description="Timing belt internal linkage"),
+            AssemblyRelationship(id="rel_j3_j4", from_part="elbow_joint_j3", to_part="forearm_boom_j4", rel_type="mounts", description="Splined structural clamp"),
+            AssemblyRelationship(id="rel_j4_j5", from_part="forearm_boom_j4", to_part="wrist_flange_j5", rel_type="mounts", description="Precision hollow-shaft coupling"),
+            AssemblyRelationship(id="rel_j5_gripper", from_part="wrist_flange_j5", to_part="pneumatic_gripper", rel_type="controls", description="ISO 9409-1 tool mounting flange")
+        ]
+
+        return AssemblyModel(
+            id=model_id,
+            name="6-DOF Industrial Articulated Robotic Arm",
+            units="mm",
+            overallSize=[240.0, 720.0, 320.0],
+            parts=parts,
+            details=details,
+            relationships=relationships,
+            primary_axis="y"
+        )
+
+
