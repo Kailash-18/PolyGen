@@ -74,3 +74,24 @@ class ExplosionPose(BaseModel):
     current_position: List[float]
     offset: List[float]
     progress: float
+
+class AssemblyEngine:
+    @staticmethod
+    def _normalize(vec: List[float]) -> List[float]:
+        mag = math.sqrt(sum(v * v for v in vec))
+        if mag < 1e-6:
+            return [0.0, 1.0, 0.0]
+        return [round(v / mag, 4) for v in vec]
+
+    @staticmethod
+    def _resolve_axis_vector(axis: str, magnitude: float = 1.0) -> List[float]:
+        axis_map = {
+            "x": [1.0, 0.0, 0.0],
+            "-x": [-1.0, 0.0, 0.0],
+            "y": [0.0, 1.0, 0.0],
+            "-y": [0.0, -1.0, 0.0],
+            "z": [0.0, 0.0, 1.0],
+            "-z": [0.0, 0.0, -1.0]
+        }
+        vec = axis_map.get(axis.lower(), [0.0, 1.0, 0.0])
+        return [round(v * magnitude, 4) for v in vec]
