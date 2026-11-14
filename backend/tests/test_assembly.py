@@ -65,3 +65,31 @@ def test_component_clearance_and_collision_bounding():
     positions = [p.current_position for p in poses]
     pos_tuples = [tuple(p) for p in positions]
     assert len(pos_tuples) == len(set(pos_tuples)), "Parts should not occupy duplicate centroid coordinates"
+
+
+def test_assembly_prompt_fallback():
+    m1 = AssemblyEngine.get_assembly("A glowing runic broadsword")
+    assert "Broadsword" in m1.name
+
+    m2 = AssemblyEngine.get_assembly("A heavy titanium defensive shield")
+    assert "Shield" in m2.name
+
+    m3 = AssemblyEngine.get_assembly("An ergonomic office desk chair")
+    assert "Chair" in m3.name
+
+    m4 = AssemblyEngine.get_assembly("An industrial 6-axis robot arm")
+    assert "Robotic Arm" in m4.name
+
+def test_explode_vectors_normalized():
+    for creator in [
+        AssemblyEngine.create_drone_assembly,
+        AssemblyEngine.create_broadsword_assembly,
+        AssemblyEngine.create_shield_assembly,
+        AssemblyEngine.create_chair_assembly,
+        AssemblyEngine.create_robotic_arm_assembly
+    ]:
+        model = creator()
+        for p in model.parts:
+            if p.explode_dist > 0:
+                mag = sum(x*x for x in p.explode_dir) ** 0.5
+                assert mag > 0.5, f"Vector {p.explode_dir} on {p.id} should have non-zero magnitude"
