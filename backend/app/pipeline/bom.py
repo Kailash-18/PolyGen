@@ -173,3 +173,84 @@ MATERIAL_REGISTRY: Dict[str, MaterialSpec] = {
         cost_usd_per_kg=38.00
     )
 }
+
+
+def estimate_component_volume(
+    dx_cm: float,
+    dy_cm: float,
+    dz_cm: float,
+    geometry_type: str = "box",
+    fill_factor: float = 0.65
+) -> float:
+    """
+    Computes volumetric displacement in cm^3 from bounding box and shape type.
+    """
+    bounding_vol = max(0.001, dx_cm * dy_cm * dz_cm)
+    factors = {
+        "box": 0.85,
+        "cylinder": 0.785,
+        "sphere": 0.524,
+        "cone": 0.333,
+        "hollow_shell": 0.22,
+        "sheet_metal": 0.12,
+        "lattice_frame": 0.18,
+        "pcb_board": 0.95,
+        "wire_conduit": 0.40
+    }
+    effective_factor = factors.get(geometry_type.lower(), fill_factor)
+    return round(bounding_vol * effective_factor, 2)
+
+def calculate_part_mass(volume_cm3: float, material_id: str) -> float:
+    """
+    Calculates mass in grams = volume (cm^3) * density (g/cm^3).
+    """
+    mat = MATERIAL_REGISTRY.get(material_id, MATERIAL_REGISTRY["aluminum_6061"])
+    mass = volume_cm3 * mat.density_g_cm3
+    return round(mass, 2)
+
+def estimate_part_specs(
+    part_id: str,
+    label: str,
+    dimensions_cm: tuple[float, float, float],
+    geometry_type: str = "box",
+    preferred_material: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Infers material from part label semantics if not explicitly provided.
+    """
+    lbl = label.lower()
+    mat_id = preferred_material
+    if not mat_id:
+        if any(k in lbl for k in ["blade", "tang", "steel", "cutter", "piston"]):
+            mat_id = "high_carbon_steel_1095"
+        elif any(k in lbl for k in ["pommel", "guard", "brass", "bushing"]):
+            mat_id = "brass_c360"
+        elif any(k in lbl for k in ["shield", "frame", "boom", "arm", "chassis"]):
+            mat_id = "titanium_gr5" if "shield" in lbl or "boom" in lbl else "aluminum_7075"
+        elif any(k in lbl for k in ["carbon", "rotor", "drone", "wing"]):
+            mat_id = "carbon_fiber_twill_3k"
+        elif any(k in lbl for k in ["pcb", "controller", "esc", "board"]):
+            mat_id = "fr4_pcb"
+        elif any(k in lbl for k in ["motor", "magnet", "stator"]):
+            mat_id = "copper_c110"
+        elif any(k in lbl for k in ["canopy", "lens", "visor", "window"]):
+            mat_id = "polycarbonate"
+        elif any(k in lbl for k in ["cover", "casing", "shell", "handle"]):
+            mat_id = "abs_plastic"
+        elif any(k in lbl for k in ["gear", "cam", "roller", "wheel"]):
+            mat_id = "delrin_acetal_pom"
+        elif any(k in lbl for k in ["grip", "cushion", "pad", "gasket", "seal"]):
+            mat_id = "silicone_rubber"
+        elif any(k in lbl for k in ["battery", "cell", "power"]):
+            mat_id = "lithium_polymer"
+        else:
+            mat_id = "aluminum_6061"
+
+    vol = estimate_component_volume(dimensions_cm[0], dimensions_cm[1], dimensions_cm[2], geometry_type)
+    mass = calculate_part_mass(vol, mat_id)
+    return {
+        "material_id": mat_id,
+        "material_name": MATERIAL_REGISTRY[mat_id].name,
+        "volume_cm3": vol,
+        "mass_grams": mass
+    }
