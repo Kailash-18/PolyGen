@@ -41,6 +41,30 @@ def test_list_assemblies(client):
     data = res.json()
     assert len(data["assemblies"]) == 5
 
+def test_list_physical_samples(client):
+    res = client.get("/api/physical/samples")
+    assert res.status_code == 200
+    data = res.json()
+    assert "samples" in data
+    assert len(data["samples"]) >= 5
+    sample_ids = [s["id"] for s in data["samples"]]
+    assert "iphone-17" in sample_ids
+    assert "game-boy" in sample_ids
+
+def test_get_physical_sample_detail(client):
+    res = client.get("/api/physical/samples/iphone-17")
+    assert res.status_code == 200
+    data = res.json()
+    assert "components" in data
+    assert "scene" in data
+    assert "assembly" in data["scene"]
+    assert len(data["scene"]["assembly"]["parts"]) >= 10
+
+def test_viewer_static_mount(client):
+    res = client.get("/viewer/")
+    assert res.status_code == 200
+    assert "<title>" in res.text or "html" in res.text
+
 def test_generate_asset(client):
     res = client.post("/api/generate", json={
         "prompt": "Cybernetic sword",
