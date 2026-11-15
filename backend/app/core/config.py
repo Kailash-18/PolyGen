@@ -8,7 +8,7 @@ OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
 
 class Settings(BaseModel):
     PROJECT_NAME: str = "PolyGen API"
-    VERSION: str = "1.0.0"
+    VERSION: str = "1.1.0"
     API_PREFIX: str = "/api"
     OUTPUTS_DIR: Path = OUTPUTS_DIR
     CORS_ORIGINS: list[str] = [
@@ -22,5 +22,7 @@ class Settings(BaseModel):
     ENABLE_GPU: bool = True
     MODEL_CACHE_DIR: Path = BASE_DIR / "weights"
     MOCK_3D_AI: bool = False
+    EXPLODED_VIEW_MAX_SCALE: float = 2.5
+    ENABLE_ANIMATION_LOOP: bool = True
 
 settings = Settings()

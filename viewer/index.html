@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PolyGen 3D Studio · Kailash-18</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/viewer/style.css" />
+<link rel="stylesheet" href="/viewer/labswitch.css" />
+<link rel="stylesheet" href="/viewer/tour.css" />
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<link rel="stylesheet" href="/viewer/motion.css" />
+<link rel="stylesheet" href="/viewer/landing.css" />
+<link rel="stylesheet" href="/viewer/nav.css" />
+<script>/* arriving from the other lab: start covered, lab-transit.js opens the cover */try { var lt = sessionStorage.getItem("lab-transit"); if (lt === "physical" || lt === "digital") document.documentElement.classList.add("lab-arriving", "lt-" + lt); } catch (e) {}</script>
+<script src="/viewer/lab-transit.js" defer></script>
+<script src="/viewer/sample-cue.js" defer></script>
+</head>
+<body>
+<header class="topbar vre-nav">
+  <a class="vre-brand" href="/viewer/"><svg class="vre-mark" viewBox="0 0 32 32" aria-hidden="true"><path class="m3" d="M16 20.5 27 25.5 16 30.5 5 25.5Z" fill="#8b7bff" fill-opacity=".85"/><path class="m2" d="M16 11.5 27 16.5 16 21.5 5 16.5Z" fill="#4f8cff" fill-opacity=".9"/><path class="m1" d="M16 2.5 27 7.5 16 12.5 5 7.5Z" fill="#5ee6ff"/></svg><span>PolyGen 3D</span></a>
+  <nav class="lab-switch" data-on="physical" aria-label="Lab"><i class="lab-thumb" aria-hidden="true"></i><a href="/viewer/" data-lab="physical" aria-current="page"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5 14 4.8v6.4L8 14.5 2 11.2V4.8Z"/><path d="M2 4.8 8 8l6-3.2M8 8v6.5"/></svg>PolyGen Studio</a></nav>
+  <div class="actions">
+    <label class="btn primary" for="file">Upload photos</label>
+    <input id="file" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden />
+    <input id="addFile" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden />
+    <select id="samples" class="btn" title="Saved results of earlier real analyses"><option value="">Samples…</option></select>
+  </div>
+</header>
+
+<main class="layout">
+  <section class="stage">
+    <canvas id="c"></canvas>
+    <div id="empty" class="empty landing">
+      <section class="ld-hero">
+        <div class="ld-copy">
+          <h1 class="ld-title" id="ldTitle"><span>PolyGen</span> <span>3D</span> <span>Studio.</span></h1>
+          <p class="ld-lede">Generative 3D Asset Synthesis & Multi-Part Kinematics Studio. Inspect full 3D exploded views, real-time mechanical wiring, PBR materials, thermal gradients, and procedural assembly animations.</p>
+          <div class="ld-cta">
+            <label class="ld-upload" for="file" tabindex="0" role="button">Upload 3D / Photo</label>
+            <p class="ld-hint">Kailash-18 · PolyGen Advanced Generative 3D Engineering.</p>
+          </div>
+        </div>
+        <figure class="ld-stage" id="ldStage" aria-label="The iPhone 17 teardown's 3D model, pulled apart into its layers">
+          <p class="ld-caption" id="ldCaption"></p>
+          <canvas class="ld-canvas" id="ldCanvas"></canvas>
+          <svg class="ld-leaders" id="ldLeaders" aria-hidden="true"></svg>
+          <div class="ld-labels" id="ldLabels"></div>
+        </figure>
+      </section>
+      <button type="button" class="sample-cue" data-target=".ld-shelf" data-scroller="#empty">Scroll for samples <span class="sc-arrow" aria-hidden="true">&#8595;</span></button>
+      <section class="ld-shelf" aria-labelledby="ldShelfTitle">
+        <h2 id="ldShelfTitle">Try a finished teardown</h2>
+        <p>Open any of these in the full 3D viewer, no upload needed. Each drawing is that teardown's own 3D model; point at one to pull it apart.</p>
+        <div class="ld-cards" id="ldShelf"></div>
+      </section>
+      <section class="ld-steps" aria-labelledby="ldStepsTitle">
+        <h2 id="ldStepsTitle">What one photo gives you</h2>
+        <ol>
+          <li><b>Photo in</b><p>One to four shots of the same object. Each extra angle finds parts the others missed.</p></li>
+          <li><b>Parts named</b><p>Every part you can see is cut out of your photo, labelled and checked against the real product.</p></li>
+          <li><b>Insides filled in</b><p>Boards, batteries and sensors you can't see are added from what this product really contains.</p></li>
+          <li><b>Pull it apart</b><p>Explode the 3D model, X-ray the wiring, or remove a part to see what stops working.</p></li>
+        </ol>
+      </section>
+    </div>
+    <div id="loading" class="loading" hidden>
+      <div class="scan">
+        <div class="scan-photo" id="scanPhoto">
+          <img id="scanImg" alt="" />
+          <i class="br tl"></i><i class="br tr"></i><i class="br bl"></i><i class="br brr"></i>
+          <div class="scan-grid"></div><div class="scan-line"></div><div id="scanDots" class="scan-dots"></div>
+        </div>
+        <div class="scan-side">
+          <div class="scan-title">SCANNING<span id="scanTime" class="scan-time">0.0 s</span></div>
+          <ol id="steps"></ol>
+          <div class="tiny muted" id="scanNote">AI takes 60–120 s.</div>
+        </div>
+      </div>
+    </div>
+    <div id="focusChip" class="focus-chip" hidden><span>Focused on <b id="focusName"></b></span><button type="button" id="focusExit">Show all <kbd>Esc</kbd></button></div>
+    <aside id="xrayHelp" class="xhelp" hidden aria-label="How to move around the 3D model">
+      <b id="xhTitle">3D controls</b>
+      <dl>
+        <dt><i class="mk l"></i>Left-drag</dt><dd>Rotate</dd>
+        <dt><i class="mk r"></i>Right-drag</dt><dd>Move view</dd>
+        <dt><i class="mk w"></i>Scroll</dt><dd>Zoom</dd>
+        <dt><svg class="ic" viewBox="0 0 16 16"><path d="M4 2l8.5 6.2-3.9.7 2.2 4.4-1.6.8-2.2-4.4L4 12.3z"/></svg>Click a part</dt><dd id="xhClick">Its details</dd>
+        <dt><svg class="ic" viewBox="0 0 16 16"><rect x="1.5" y="6.5" width="7" height="7" rx="1.5" class="o"/><path d="M8 8l6-6M9.5 2H14v4.5" class="o"/></svg>Drag a part</dt><dd>Pull it out</dd>
+        <dt><svg class="ic" viewBox="0 0 16 16"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M12 1.5v3h-3" class="o"/></svg>Shift + drag</dt><dd>Turn it</dd>
+        <dt><svg class="ic" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.4"/><circle cx="8" cy="8" r="5.5" class="o"/><path d="M8 .8v2M8 13.2v2M.8 8h2M13.2 8h2" class="o"/></svg>Double-click</dt><dd>Focus on it</dd>
+      </dl>
+      <div class="xh-legend" id="xhLegend" hidden><span><i style="--c:#ffb020"></i>Power</span><span><i style="--c:#36d6ff"></i>Signal</span><span><i style="--c:#9b8cff"></i>Depends on</span><span><i style="--c:#ff5fd2"></i>Motion</span><span><i style="--c:#8fa3bf"></i>Holds</span></div>
+    </aside>
+    <div id="reveal" class="reveal" hidden></div>
+    <div id="impact" class="impact" hidden></div>
+    <div id="flash" class="flash"></div>
+    <div id="viewTabs" class="tabs" hidden></div>
+    <div id="error" class="toast" hidden></div>
+    <div id="hover" class="hover" hidden></div>
+
+    <div class="controls" id="controls" hidden>
+      <label class="slider">Explode
+        <input id="explode" type="range" min="0" max="1" step="0.01" value="0" />
+      </label>
+      <div class="seg layout-seg" id="layoutSeg" role="group" aria-label="Object orientation">
+        <button type="button" data-l="auto" class="on" title="As the AI built it">Natural</button><button type="button" data-l="horizontal" title="Object lies flat, parts come apart up and down"><i class="ic-h"></i>Horizontal</button><button type="button" data-l="vertical" title="Object stands up, parts come apart left and right"><i class="ic-v"></i>Vertical</button>
+      </div>
+      <label class="check"><input id="isolate" type="checkbox" /> Isolate selected</label>
+      <label class="check"><input id="spin" type="checkbox" /> Spin</label>
+      <label class="check xray"><input id="xray" type="checkbox" /> X-ray wiring</label>
+      <label class="check" title="Procedural mechanical audio feedback"><input id="audioFx" type="checkbox" checked /> Audio SFX</label>
+      <label class="check" title="FLIR Infrared thermal gradient simulation"><input id="thermal" type="checkbox" /> Thermal FLIR</label>
+      <label class="check" title="Dynamic real-time Center-of-Mass & Inertia Axes"><input id="kinematics" type="checkbox" /> Center-of-Mass</label>
+      <button id="resetView" class="btn small">Reset view</button>
+      <button id="resetParts" class="btn small" hidden>Reset parts</button>
+      <span class="hint" id="handsHint">Drag a part to pull it out · Shift+drag to turn · Double-click to focus</span>
+      <span id="depthBadge" class="badge">depth: —</span>
+    </div>
+  </section>
+
+  <aside class="panel" id="panel" hidden>
+    <header class="p-head">
+      <div class="eyebrow" id="modeBadge">Live analysis</div>
+      <h2 id="title"></h2>
+      <div id="stats" class="stats"></div>
+    </header>
+    <nav class="ptabs" id="ptabs" role="tablist" aria-label="Panel">
+      <button type="button" role="tab" data-tab="overview">Overview</button>
+      <button type="button" role="tab" data-tab="parts" class="on">Parts</button>
+      <button type="button" role="tab" data-tab="links">Connections</button>
+      <button type="button" role="tab" data-tab="ask">Ask</button>
+      <span class="ptab-ink" id="ptabInk"></span>
+    </nav>
+    <div class="pviews">
+      <section class="pview" data-view="overview" hidden>
+        <p id="summary" class="summary"></p>
+        <div id="flow" class="flow"></div>
+        <div id="product" class="product" hidden></div>
+      </section>
+
+      <section class="pview on" data-view="parts">
+        <div id="detail" class="detail" hidden>
+          <div class="d-top"><span id="dThumb" class="d-thumb"></span><div class="d-name"><span id="dType" class="d-type"></span><h3 id="dLabel"></h3></div><span id="dStatus" class="chip"></span></div>
+          <p id="dFunction" class="dfun" hidden></p>
+          <p id="dIfRemoved" class="dif" hidden></p>
+          <div id="dAlts" class="alts" hidden></div>
+          <ul id="dEvidence" class="evidence"></ul>
+          <ul id="dRels" class="rels" hidden></ul>
+          <div class="row d-acts">
+            <button id="whatif" class="btn small danger">What if I remove it?</button>
+            <button id="forward" class="btn small ghost" title="Move towards you">Bring forward</button>
+            <button id="backward" class="btn small ghost" title="Move away from you">Send back</button>
+          </div>
+          <div id="whatifOut" class="whatif" hidden></div>
+        </div>
+        <div class="parts-bar">
+          <div class="seg" id="partsFilter" aria-label="Show parts">
+            <button type="button" data-f="all" class="on">All <span id="partsCount"></span></button><button type="button" data-f="observed">Seen</button><button type="button" data-f="inferred">Inside</button>
+          </div>
+          <input id="partsSearch" class="parts-search" type="search" placeholder="Find…" autocomplete="off" />
+        </div>
+        <ul id="parts" class="parts"></ul>
+      </section>
+
+      <section class="pview" data-view="links" hidden>
+        <div id="links" class="links"></div>
+      </section>
+
+      <section class="pview chat" data-view="ask" hidden id="chatBlock">
+        <div class="chat-ctx" id="chatCtx"></div>
+        <div id="chatLog" class="chat-log" aria-live="polite"></div>
+        <div id="chatChips" class="chat-chips"></div>
+        <form id="chatForm" class="chat-form">
+          <input id="chatInput" autocomplete="off" maxlength="500" placeholder="Ask about any part…" />
+          <button class="btn small primary" id="chatSend" aria-label="Send">Ask <span aria-hidden="true">→</span></button>
+        </form>
+      </section>
+    </div>
+  </aside>
+</main>
+<script type="module" src="/viewer/viewer.js"></script>
+<script type="module" src="/viewer/landing.js"></script>
+<script src="/viewer/tour.js" defer></script>
+<script src="/viewer/motion.js" defer></script>
+</body>
+</html>

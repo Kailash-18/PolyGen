@@ -24,6 +24,30 @@ export function Navbar({ gpuInfo }: NavbarProps) {
       </div>
 
       <div className="nav-actions">
+        <a
+          href="http://localhost:8000/viewer/"
+          target="_blank"
+          rel="noreferrer"
+          className="viewer-launch-btn"
+          title="Open Full 3D Exploded-View & Kinematics Studio"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '6px 14px',
+            borderRadius: '8px',
+            background: 'linear-gradient(135deg, #0ea5e9, #a855f7)',
+            color: '#fff',
+            fontWeight: 600,
+            fontSize: '13px',
+            textDecoration: 'none',
+            boxShadow: '0 2px 10px rgba(14, 165, 233, 0.35)'
+          }}
+        >
+          <Box className="w-4 h-4" />
+          <span>3D Studio Viewer</span>
+        </a>
+
         <div className="gpu-badge">
           <Cpu className="w-4 h-4 text-emerald-400" />
           <span>{gpuInfo?.cuda_available ? gpuInfo.device_name : 'Local Engine Ready'}</span>
