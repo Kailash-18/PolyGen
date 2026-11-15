@@ -34,3 +34,49 @@ export interface ProgressUpdate {
   message: string;
   result?: ModelMetadata;
 }
+
+export interface AssemblyPart {
+  id: string;
+  name: string;
+  type: string;
+  shape: string;
+  size: number[];
+  position: number[];
+  rotation?: number[];
+  color: string;
+  material: string;
+  explodeDir: number[];
+  explodeDist: number;
+  cornerRadius?: number;
+  function?: string;
+  layer?: number;
+}
+
+export interface AssemblyRelationship {
+  id: string;
+  from: string;
+  to: string;
+  type: string;
+  description?: string;
+}
+
+export interface AssemblyModel {
+  id: string;
+  name: string;
+  units: string;
+  overallSize: number[];
+  parts: AssemblyPart[];
+  relationships: AssemblyRelationship[];
+  primary_axis: string;
+}
+
+export interface TeardownStep {
+  step: number;
+  part_id: string;
+  part_name: string;
+  layer: number;
+  explode_dir: number[];
+  explode_dist: number;
+  requires_tool: boolean;
+  action: string;
+}
