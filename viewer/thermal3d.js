@@ -119,3 +119,4 @@ export function installThermal(View) {
     if (origRender) origRender.call(this);
   };
 }
+

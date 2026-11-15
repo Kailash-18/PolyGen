@@ -97,3 +97,4 @@ export function installKinematics(View) {
     if (origRender) origRender.call(this);
   };
 }
+

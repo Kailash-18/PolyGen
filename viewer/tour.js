@@ -66,25 +66,25 @@
     await sleep(700);
     el.remove();
   }
-  const INTRO = `<div class="tour-kicker">Banana Hacks 2026 · Image AI</div>
-    <h1 class="tour-title">${words("Teardown AI")}</h1>
-    <p class="tour-sub">From visual evidence to explorable systems.</p>
+  const INTRO = `<div class="tour-kicker">PolyGen · Generative 3D Asset Studio</div>
+    <h1 class="tour-title">${words("PolyGen 3D")}</h1>
+    <p class="tour-sub">AI-Powered 3D Generation & Multi-Part Kinematics Studio by Kailash-18.</p>
     <div class="tour-pair">
-      <div class="tour-lab"><b>PHYSICAL LAB</b><h3>Photo of an object</h3><p>Every part found, a 3D model you can pull apart, and what fails if a part breaks.</p></div>
+      <div class="tour-lab"><b>3D ASSET STUDIO</b><h3>3D Generative Mesh</h3><p>Watertight geometry, QEM decimation, PBR texture synthesis, and GLB/OBJ packaging.</p></div>
       <div class="tour-mid"><span>one<br>engine</span></div>
-      <div class="tour-lab"><b>DIGITAL LAB</b><h3>Screenshot of an app</h3><p>Working code, an X-ray of how it is built, mobile versions and a plan to build it.</p></div>
+      <div class="tour-lab"><b>KINEMATICS LAB</b><h3>Exploded-View Decomposition</h3><p>Kinematic trajectories, wiring flow, collision-free separation, and interactive teardown.</p></div>
     </div>`;
-  const BRIDGE = `<div class="tour-kicker">Same engine</div><h1 class="tour-title">${words("Now for software.")}</h1>
-    <p class="tour-sub">A screenshot is a system too: parts, layout, relationships, behaviour.</p>`;
-  const OUTRO = `<div class="tour-kicker">One engine · two worlds</div>
-    <h1 class="tour-title">${words("Screenshot or photo in. System out.")}</h1>
-    <p class="tour-sub">Components · relationships · behaviours · dependencies, for objects and for screens.</p>
+  const BRIDGE = `<div class="tour-kicker">PolyGen Core</div><h1 class="tour-title">${words("Spatial 3D AI")}</h1>
+    <p class="tour-sub">High-precision procedural solids, parametric shapes, and realistic physical dressing.</p>`;
+  const OUTRO = `<div class="tour-kicker">PolyGen Architecture</div>
+    <h1 class="tour-title">${words("Text In · Full 3D Asset Out.")}</h1>
+    <p class="tour-sub">Components · relationships · behaviours · dependencies, for 3D game and metaverse assets.</p>
     <div class="tour-pair">
-      <div class="tour-lab"><b>PHYSICAL LAB</b><h3>Parts, 3D, what-if</h3><p>Exploded model, X-ray wiring, failure cascade, system graph, grounded chat.</p></div>
-      <div class="tour-mid"><span>SystemAnalysis</span></div>
-      <div class="tour-lab"><b>DIGITAL LAB</b><h3>Code, X-ray, plan</h3><p>HTML, React, React Native, Flutter; build plan, backend, accessibility audit.</p></div>
+      <div class="tour-lab"><b>ASSET GENERATOR</b><h3>Procedural & Neural</h3><p>Fast AI generation, trimesh topology optimization, UV conformal unwrapping.</p></div>
+      <div class="tour-mid"><span>PolyGen</span></div>
+      <div class="tour-lab"><b>3D VIEWER</b><h3>Kinematics & Shaders</h3><p>Exploded model, X-ray wiring, thermal FLIR, procedural audio, grounded inspection.</p></div>
     </div>
-    <div class="tour-team">Teardown AI · built during Banana Hacks 2026</div>`;
+    <div class="tour-team">PolyGen · Created by Kailash-18</div>`;
 
   // smooth slider motion that the viewer sees as real input
   function slide(input, from, to, ms) {

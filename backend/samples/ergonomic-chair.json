@@ -1,0 +1,607 @@
+{
+  "analysisId": "polygen-ergonomic-chair",
+  "domain": "Spatial Computing & Mechanical Assembly",
+  "title": "Ergonomic Task Chair (PolyGen Architecture)",
+  "source": "PolyGen Generative 3D Asset Engine (Infotact Project 3)",
+  "assetId": "ergonomic-chair",
+  "components": [
+    {
+      "id": "star_base",
+      "label": "5-Star Reinforced Nylon Base",
+      "type": "structure",
+      "status": "observed",
+      "confidence": 0.98,
+      "evidence": [
+        "Synthesized by PolyGen AI: High-strength glass-fiber star chassis distributing load"
+      ],
+      "bbox": {
+        "x": 0.2,
+        "y": 0.2,
+        "width": 0.6,
+        "height": 0.6
+      },
+      "function": "High-strength glass-fiber star chassis distributing load",
+      "ifRemoved": "Disables functionality of 5-Star Reinforced Nylon Base",
+      "importance": 0.8
+    },
+    {
+      "id": "gas_piston",
+      "label": "Class-4 Pneumatic Gas Lift Piston",
+      "type": "mechanism",
+      "status": "observed",
+      "confidence": 0.98,
+      "evidence": [
+        "Synthesized by PolyGen AI: Nitrogen gas cylinder controlling height and 360-swivel"
+      ],
+      "bbox": {
+        "x": 0.2,
+        "y": 0.2,
+        "width": 0.6,
+        "height": 0.6
+      },
+      "function": "Nitrogen gas cylinder controlling height and 360-swivel",
+      "ifRemoved": "Disables functionality of Class-4 Pneumatic Gas Lift Piston",
+      "importance": 0.8
+    },
+    {
+      "id": "seat_mechanism",
+      "label": "Syncro-Tilt Control Engine",
+      "type": "mechanism",
+      "status": "observed",
+      "confidence": 0.98,
+      "evidence": [
+        "Synthesized by PolyGen AI: Dual-lever recline lock and seat depth adjustment bracket"
+      ],
+      "bbox": {
+        "x": 0.2,
+        "y": 0.2,
+        "width": 0.6,
+        "height": 0.6
+      },
+      "function": "Dual-lever recline lock and seat depth adjustment bracket",
+      "ifRemoved": "Disables functionality of Syncro-Tilt Control Engine",
+      "importance": 0.8
+    },
+    {
+      "id": "seat_cushion",
+      "label": "Contoured Ergonomic Seat Cushion",
+      "type": "interface",
+      "status": "observed",
+      "confidence": 0.98,
+      "evidence": [
+        "Synthesized by PolyGen AI: Molded waterfall foam reducing thigh pressure and fatigue"
+      ],
+      "bbox": {
+        "x": 0.2,
+        "y": 0.2,
+        "width": 0.6,
+        "height": 0.6
+      },
+      "function": "Molded waterfall foam reducing thigh pressure and fatigue",
+      "ifRemoved": "Disables functionality of Contoured Ergonomic Seat Cushion",
+      "importance": 0.8
+    },
+    {
+      "id": "backrest_frame",
+      "label": "Breathable Mesh Spine Frame",
+      "type": "structure",
+      "status": "observed",
+      "confidence": 0.98,
+      "evidence": [
+        "Synthesized by PolyGen AI: S-curve polypropylene frame supporting elastomeric mesh"
+      ],
+      "bbox": {
+        "x": 0.2,
+        "y": 0.2,
+        "width": 0.6,
+        "height": 0.6
+      },
+      "function": "S-curve polypropylene frame supporting elastomeric mesh",
+      "ifRemoved": "Disables functionality of Breathable Mesh Spine Frame",
+      "importance": 0.8
+    },
+    {
+      "id": "lumbar_support",
+      "label": "Dynamic Lumbar Cushion Pad",
+      "type": "interface",
+      "status": "observed",
+      "confidence": 0.98,
+      "evidence": [
+        "Synthesized by PolyGen AI: Height-adjustable lower spine posture stabilizer"
+      ],
+      "bbox": {
+        "x": 0.2,
+        "y": 0.2,
+        "width": 0.6,
+        "height": 0.6
+      },
+      "function": "Height-adjustable lower spine posture stabilizer",
+      "ifRemoved": "Disables functionality of Dynamic Lumbar Cushion Pad",
+      "importance": 0.8
+    },
+    {
+      "id": "armrest_left",
+      "label": "4D Soft-Touch Armrest (Left)",
+      "type": "interface",
+      "status": "observed",
+      "confidence": 0.98,
+      "evidence": [
+        "Synthesized by PolyGen AI: Multidirectional pivoting elbow rest with height adjustment"
+      ],
+      "bbox": {
+        "x": 0.2,
+        "y": 0.2,
+        "width": 0.6,
+        "height": 0.6
+      },
+      "function": "Multidirectional pivoting elbow rest with height adjustment",
+      "ifRemoved": "Disables functionality of 4D Soft-Touch Armrest (Left)",
+      "importance": 0.8
+    },
+    {
+      "id": "armrest_right",
+      "label": "4D Soft-Touch Armrest (Right)",
+      "type": "interface",
+      "status": "observed",
+      "confidence": 0.98,
+      "evidence": [
+        "Synthesized by PolyGen AI: Multidirectional pivoting elbow rest with height adjustment"
+      ],
+      "bbox": {
+        "x": 0.2,
+        "y": 0.2,
+        "width": 0.6,
+        "height": 0.6
+      },
+      "function": "Multidirectional pivoting elbow rest with height adjustment",
+      "ifRemoved": "Disables functionality of 4D Soft-Touch Armrest (Right)",
+      "importance": 0.8
+    },
+    {
+      "id": "caster_wheels",
+      "label": "High-Glide Dual PU Caster Set",
+      "type": "actuator",
+      "status": "observed",
+      "confidence": 0.98,
+      "evidence": [
+        "Synthesized by PolyGen AI: Smooth silent rolling casters on hard and soft floors"
+      ],
+      "bbox": {
+        "x": 0.2,
+        "y": 0.2,
+        "width": 0.6,
+        "height": 0.6
+      },
+      "function": "Smooth silent rolling casters on hard and soft floors",
+      "ifRemoved": "Disables functionality of High-Glide Dual PU Caster Set",
+      "importance": 0.8
+    }
+  ],
+  "relationships": [
+    {
+      "from": "star_base",
+      "to": "gas_piston",
+      "type": "supports",
+      "why": "Tapered press-fit column"
+    },
+    {
+      "from": "gas_piston",
+      "to": "seat_mechanism",
+      "type": "mounts",
+      "why": "Standard 28mm gas hub receiver"
+    },
+    {
+      "from": "seat_mechanism",
+      "to": "seat_cushion",
+      "type": "mounts",
+      "why": "Steel mounting plates with 4 M6 screws"
+    },
+    {
+      "from": "seat_mechanism",
+      "to": "backrest_frame",
+      "type": "controls",
+      "why": "Dual-bar spring-assisted recline linkage"
+    },
+    {
+      "from": "seat_mechanism",
+      "to": "armrest_left",
+      "type": "mounts",
+      "why": "Adjustable lateral slide bracket"
+    },
+    {
+      "from": "seat_mechanism",
+      "to": "armrest_right",
+      "type": "mounts",
+      "why": "Adjustable lateral slide bracket"
+    },
+    {
+      "from": "star_base",
+      "to": "caster_wheels",
+      "type": "mounts",
+      "why": "11mm grip-ring friction stems"
+    }
+  ],
+  "summary": "Parametric ergonomic task chair with pneumatic gas lift, syncro-tilt mechanism, 4D armrests, and dynamic lumbar support cushion.",
+  "limitations": [],
+  "provider": "polygen",
+  "scene": {
+    "kind": "assembly",
+    "imageWidth": 1024,
+    "imageHeight": 1024,
+    "plate": null,
+    "plateBbox": null,
+    "layers": [],
+    "ghostComponentIds": [],
+    "notes": [
+      "PolyGen AI Generative Multi-Part Asset with Kinematics Exploded View"
+    ],
+    "views": [
+      "front",
+      "perspective",
+      "exploded"
+    ],
+    "product": {
+      "name": "Ergonomic Task Chair (PolyGen Architecture)",
+      "category": "Spatial Computing & Mechanical Assembly"
+    },
+    "assembly": {
+      "units": "mm",
+      "overallSize": [
+        680.0,
+        1020.0,
+        680.0
+      ],
+      "primaryAxis": "y",
+      "parts": [
+        {
+          "id": "star_base",
+          "name": "5-Star Reinforced Nylon Base",
+          "type": "structure",
+          "shape": "arch",
+          "size": [
+            680.0,
+            95.0,
+            680.0
+          ],
+          "position": [
+            0.0,
+            50.0,
+            0.0
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "color": "#111827",
+          "material": "plastic",
+          "explodeDir": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "explodeDist": 1.8,
+          "cornerRadius": null,
+          "wall": null,
+          "function": "High-strength glass-fiber star chassis distributing load",
+          "layer": -3
+        },
+        {
+          "id": "gas_piston",
+          "name": "Class-4 Pneumatic Gas Lift Piston",
+          "type": "mechanism",
+          "shape": "cylinder",
+          "size": [
+            50.0,
+            240.0,
+            50.0
+          ],
+          "position": [
+            0.0,
+            180.0,
+            0.0
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "color": "#cbd5e1",
+          "material": "metal",
+          "explodeDir": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "explodeDist": 1.0,
+          "cornerRadius": null,
+          "wall": null,
+          "function": "Nitrogen gas cylinder controlling height and 360-swivel",
+          "layer": -2
+        },
+        {
+          "id": "seat_mechanism",
+          "name": "Syncro-Tilt Control Engine",
+          "type": "mechanism",
+          "shape": "box",
+          "size": [
+            220.0,
+            65.0,
+            240.0
+          ],
+          "position": [
+            0.0,
+            310.0,
+            0.0
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "color": "#374151",
+          "material": "metal",
+          "explodeDir": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "explodeDist": 0.0,
+          "cornerRadius": null,
+          "wall": null,
+          "function": "Dual-lever recline lock and seat depth adjustment bracket",
+          "layer": 0
+        },
+        {
+          "id": "seat_cushion",
+          "name": "Contoured Ergonomic Seat Cushion",
+          "type": "interface",
+          "shape": "rounded_box",
+          "size": [
+            510.0,
+            75.0,
+            480.0
+          ],
+          "position": [
+            0.0,
+            370.0,
+            0.0
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "color": "#1f2937",
+          "material": "fabric",
+          "explodeDir": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "explodeDist": 0.8,
+          "cornerRadius": 25.0,
+          "wall": null,
+          "function": "Molded waterfall foam reducing thigh pressure and fatigue",
+          "layer": 1
+        },
+        {
+          "id": "backrest_frame",
+          "name": "Breathable Mesh Spine Frame",
+          "type": "structure",
+          "shape": "frame",
+          "size": [
+            470.0,
+            560.0,
+            45.0
+          ],
+          "position": [
+            0.0,
+            660.0,
+            -220.0
+          ],
+          "rotation": [
+            12.0,
+            0.0,
+            0.0
+          ],
+          "color": "#111827",
+          "material": "plastic",
+          "explodeDir": [
+            0.0,
+            0.6,
+            -1.0
+          ],
+          "explodeDist": 1.5,
+          "cornerRadius": null,
+          "wall": 30.0,
+          "function": "S-curve polypropylene frame supporting elastomeric mesh",
+          "layer": 2
+        },
+        {
+          "id": "lumbar_support",
+          "name": "Dynamic Lumbar Cushion Pad",
+          "type": "interface",
+          "shape": "plate",
+          "size": [
+            320.0,
+            140.0,
+            25.0
+          ],
+          "position": [
+            0.0,
+            520.0,
+            -210.0
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "color": "#4b5563",
+          "material": "rubber",
+          "explodeDir": [
+            0.0,
+            0.2,
+            -1.0
+          ],
+          "explodeDist": 1.8,
+          "cornerRadius": null,
+          "wall": null,
+          "function": "Height-adjustable lower spine posture stabilizer",
+          "layer": 3
+        },
+        {
+          "id": "armrest_left",
+          "name": "4D Soft-Touch Armrest (Left)",
+          "type": "interface",
+          "shape": "rounded_box",
+          "size": [
+            80.0,
+            220.0,
+            240.0
+          ],
+          "position": [
+            -270.0,
+            460.0,
+            -40.0
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "color": "#1f2937",
+          "material": "rubber",
+          "explodeDir": [
+            -1.0,
+            0.3,
+            0.0
+          ],
+          "explodeDist": 1.4,
+          "cornerRadius": 15.0,
+          "wall": null,
+          "function": "Multidirectional pivoting elbow rest with height adjustment",
+          "layer": 1
+        },
+        {
+          "id": "armrest_right",
+          "name": "4D Soft-Touch Armrest (Right)",
+          "type": "interface",
+          "shape": "rounded_box",
+          "size": [
+            80.0,
+            220.0,
+            240.0
+          ],
+          "position": [
+            270.0,
+            460.0,
+            -40.0
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "color": "#1f2937",
+          "material": "rubber",
+          "explodeDir": [
+            1.0,
+            0.3,
+            0.0
+          ],
+          "explodeDist": 1.4,
+          "cornerRadius": 15.0,
+          "wall": null,
+          "function": "Multidirectional pivoting elbow rest with height adjustment",
+          "layer": 1
+        },
+        {
+          "id": "caster_wheels",
+          "name": "High-Glide Dual PU Caster Set",
+          "type": "actuator",
+          "shape": "cylinder",
+          "size": [
+            65.0,
+            55.0,
+            65.0
+          ],
+          "position": [
+            0.0,
+            15.0,
+            0.0
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            90.0
+          ],
+          "color": "#0f172a",
+          "material": "rubber",
+          "explodeDir": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "explodeDist": 2.4,
+          "cornerRadius": null,
+          "wall": null,
+          "function": "Smooth silent rolling casters on hard and soft floors",
+          "layer": -4
+        }
+      ],
+      "relationships": [
+        {
+          "id": "rel_piston_base",
+          "from": "star_base",
+          "to": "gas_piston",
+          "type": "supports",
+          "description": "Tapered press-fit column"
+        },
+        {
+          "id": "rel_mech_piston",
+          "from": "gas_piston",
+          "to": "seat_mechanism",
+          "type": "mounts",
+          "description": "Standard 28mm gas hub receiver"
+        },
+        {
+          "id": "rel_seat_mech",
+          "from": "seat_mechanism",
+          "to": "seat_cushion",
+          "type": "mounts",
+          "description": "Steel mounting plates with 4 M6 screws"
+        },
+        {
+          "id": "rel_back_mech",
+          "from": "seat_mechanism",
+          "to": "backrest_frame",
+          "type": "controls",
+          "description": "Dual-bar spring-assisted recline linkage"
+        },
+        {
+          "id": "rel_arm_l_seat",
+          "from": "seat_mechanism",
+          "to": "armrest_left",
+          "type": "mounts",
+          "description": "Adjustable lateral slide bracket"
+        },
+        {
+          "id": "rel_arm_r_seat",
+          "from": "seat_mechanism",
+          "to": "armrest_right",
+          "type": "mounts",
+          "description": "Adjustable lateral slide bracket"
+        },
+        {
+          "id": "rel_casters_base",
+          "from": "star_base",
+          "to": "caster_wheels",
+          "type": "mounts",
+          "description": "11mm grip-ring friction stems"
+        }
+      ]
+    }
+  }
+}
