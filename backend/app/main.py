@@ -38,7 +38,14 @@ geometry_engine = GeometryEngine()
 mesh_optimizer = MeshOptimizer(target_polycount=settings.DEFAULT_DECIMATION_TARGET)
 texture_engine = TextureEngine(resolution=512)
 asset_exporter = AssetExporter(output_root=settings.OUTPUTS_DIR)
+
 app.mount("/outputs", StaticFiles(directory=str(settings.OUTPUTS_DIR)), name="outputs")
+
+VIEWER_DIR = Path(__file__).resolve().parent.parent.parent / "viewer"
+if VIEWER_DIR.exists():
+    app.mount("/viewer", StaticFiles(directory=str(VIEWER_DIR), html=True), name="viewer")
+
+SAMPLES_DIR = Path(__file__).resolve().parent.parent / "samples"
 
 class GenerationRequest(BaseModel):
     prompt: str = Field(..., json_schema_extra={"example": "A rusted medieval broadsword with a glowing blue sapphire in the hilt"})
@@ -47,6 +54,37 @@ class GenerationRequest(BaseModel):
 
 class ExplodeRequest(BaseModel):
     progress: float = Field(default=0.75, ge=0.0, le=1.0, description="Exploded view trajectory factor 0.0 to 1.0")
+
+@app.get("/api/physical/samples")
+async def list_physical_samples():
+    items = []
+    if SAMPLES_DIR.exists():
+        for f in sorted(SAMPLES_DIR.glob("*.json")):
+            try:
+                d = json.loads(f.read_text(encoding="utf-8"))
+                items.append({
+                    "id": f.stem,
+                    "title": d.get("title", f.stem.replace("-", " ").title())
+                })
+            except Exception:
+                continue
+    return {
+        "samples": items,
+        "note": "Reference 3D models and verified mechanical assemblies."
+    }
+
+@app.get("/api/physical/samples/{sample_id}")
+async def get_physical_sample(sample_id: str):
+    clean_id = sample_id.replace("-", "").replace("_", "")
+    if not clean_id.isalnum():
+        raise HTTPException(400, "Invalid sample ID")
+    f = SAMPLES_DIR / f"{sample_id}.json"
+    if not f.exists():
+        raise HTTPException(404, "Sample not found")
+    try:
+        return json.loads(f.read_text(encoding="utf-8"))
+    except Exception as e:
+        raise HTTPException(500, f"Error reading sample: {e}")
 
 @app.get("/api/health")
 async def health_check():

@@ -9,6 +9,9 @@ import { installSwap } from "./swap3d.js";
 import { installHolo } from "./holo3d.js";
 import { installThumbs } from "./thumbs3d.js";
 import { installXray } from "./xray3d.js";
+import { installAudio } from "./audio3d.js";
+import { installThermal } from "./thermal3d.js";
+import { installKinematics } from "./kinematics3d.js";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
@@ -1560,3 +1563,6 @@ function footTexture() { // soft square glow where the beam meets the plinth
 installHolo(AssemblyView);
 installXray(AssemblyView);
 installThumbs(AssemblyView);
+installAudio(AssemblyView);
+installThermal(AssemblyView);
+installKinematics(AssemblyView);
