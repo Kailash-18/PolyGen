@@ -308,3 +308,18 @@ async def validate_model_clearance(model_id: str, req: ClearanceRequest):
         "model_id": model_id,
         "clearance_report": report
     }
+
+
+from app.pipeline.codegen import generate_standalone_viewer_bundle, generate_pbr_material_code
+
+@app.get("/api/models/{model_id}/codegen/threejs")
+async def get_model_threejs_code(model_id: str):
+    """
+    Returns downloadable production-ready Three.js JavaScript and HTML bundle.
+    """
+    bundle = generate_standalone_viewer_bundle(model_id, f"PolyGen Asset: {model_id.upper()}")
+    return {
+        "model_id": model_id,
+        "format": "html_threejs_bundle",
+        "code": bundle
+    }
