@@ -98,3 +98,37 @@ Directly integrated and adapted from the high-precision 3D animation architectur
   - `tests/test_teardown.py`: Teardown sequence, layer grouping, and DAG dependency solver.
   - `tests/test_api.py`: FastAPI endpoints and WebSocket progress protocol.
   - `test_pipeline.py`: Comprehensive end-to-end test script.
+
+
+## Day 4 Deliverables (16 Nov 2026): BOM Engine, Kinematics & Procedural Codegen
+
+PolyGen now incorporates complete physical engineering analysis, helical kinematics trajectories, 3D clearance collision verification, and exportable Three.js WebGL procedural code generation.
+
+### 1. Bill of Materials (BOM) & Material Physical Analysis Engine (`app.pipeline.bom`)
+- **Material Density Registry**: Over 15 engineering materials (Aerospace Aluminum 7075-T6, Titanium Ti-6Al-4V Gr5, 3K Twill Carbon Fiber, Hardened 1095 Steel, Brass C360, Delrin POM, Silicone).
+- **Volumetric Mass Estimation**: Geometric shape factors compute exact part mass in grams from bounding box bounds and solidity factors.
+- **Manufacturing Cost Breakdown**: Factor in machine hourly rates (5-Axis CNC, High-Pressure Die Casting, SLS 3D Printing, Injection Molding), setup fees, tooling amortization, and finishing costs.
+
+### 2. Advanced Disassembly Kinematics & Helical Trajectories (`app.pipeline.motion`)
+- **Helical Unscrewing**: Multi-turn rotational unscrewing with pitch travel along screw axis.
+- **Spring-Damper Easing**: Underdamped second-order harmonic settling curves modeling elastic physical release.
+- **Progressive Staged Explosion**: Sequential disassembly from outer fasteners to shells, mechanisms, and chassis.
+
+### 3. Continuous 3D Clearance & Collision Verification (`app.pipeline.box_eval`)
+- **Volumetric 3D IoU**: Evaluates 3D intersection-over-union across the disassembly timeline.
+- **Clearance Safety Guardrails**: Mathematically verifies zero collisions across all component pairs ($t \in [0, 1]$).
+
+### 4. Procedural Three.js WebGL Generator (`app.pipeline.codegen`)
+- **Parametric Meshes**: Procedural chamfered cylinders, diamond-profile sword blades, hollow enclosures, and bevel gears.
+- **PBR Shader Synthesis**: `THREE.MeshPhysicalMaterial` code generation with clearcoat, metalness, and roughness perturbation.
+- **Self-Contained WebGL Bundle**: Exportable single-file HTML applications with interactive exploded view controls.
+
+### API Reference Table
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/models/{model_id}/bom` | `GET` | Retrieve complete Bill of Materials, part weights, and manufacturing cost breakdown |
+| `/api/boms` | `GET` | List catalog of available multi-part assembly BOMs |
+| `/api/models/{model_id}/kinematics` | `GET` | Multi-stage disassembly trajectory keyframes and helical unscrew parameters |
+| `/api/models/{model_id}/validate-clearance` | `POST` | Continuous 3D collision check along explosion timeline |
+| `/api/models/{model_id}/codegen/threejs` | `GET` | Downloadable Three.js procedural source code bundle |
+| `/api/models/generate-procedural` | `POST` | Parametric on-the-fly synthesis of custom 3D components |
