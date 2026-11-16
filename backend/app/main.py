@@ -8,6 +8,7 @@ import uuid
 import json
 from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -44,6 +45,22 @@ app.mount("/outputs", StaticFiles(directory=str(settings.OUTPUTS_DIR)), name="ou
 VIEWER_DIR = Path(__file__).resolve().parent.parent.parent / "viewer"
 if VIEWER_DIR.exists():
     app.mount("/viewer", StaticFiles(directory=str(VIEWER_DIR), html=True), name="viewer")
+
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/viewer/")
+
+@app.get("/digital")
+async def digital_redirect():
+    return RedirectResponse(url="/viewer/build.html")
+
+@app.get("/build")
+async def build_redirect():
+    return RedirectResponse(url="/viewer/build.html")
+
+@app.get("/physical")
+async def physical_redirect():
+    return RedirectResponse(url="/viewer/")
 
 SAMPLES_DIR = Path(__file__).resolve().parent.parent / "samples"
 
