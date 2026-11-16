@@ -1465,3 +1465,54 @@ async function renderInspect() {
     try { await navigator.clipboard.writeText(t); toast("Copied"); } catch { toast("Copy failed"); }
   }));
 }
+
+
+// ============================================================================
+// PolyGen Disassembly Sequence Player Controller
+// ============================================================================
+window.PolyGenDisassemblyPlayer = {
+    currentStep: 0,
+    totalSteps: 6,
+    isPlaying: false,
+    speedMultiplier: 1.0,
+    playInterval: null,
+    
+    play: function() {
+        if (this.isPlaying) return;
+        this.isPlaying = true;
+        const self = this;
+        this.playInterval = setInterval(() => {
+            if (self.currentStep < self.totalSteps) {
+                self.setStep(self.currentStep + 1);
+            } else {
+                self.pause();
+            }
+        }, 1200 / self.speedMultiplier);
+    },
+    
+    pause: function() {
+        this.isPlaying = false;
+        if (this.playInterval) {
+            clearInterval(this.playInterval);
+            this.playInterval = null;
+        }
+    },
+    
+    setStep: function(step) {
+        this.currentStep = Math.max(0, Math.min(this.totalSteps, step));
+        const progress = this.currentStep / this.totalSteps;
+        if (window.PolyGenAssembly && window.PolyGenAssembly.setExplodeProgress) {
+            window.PolyGenAssembly.setExplodeProgress(progress);
+        }
+        const badge = document.getElementById("disassemblyStepBadge");
+        if (badge) badge.innerText = `Step ${this.currentStep} of ${this.totalSteps} (${Math.round(progress*100)}%)`;
+    },
+    
+    setSpeed: function(speed) {
+        this.speedMultiplier = speed;
+        if (this.isPlaying) {
+            this.pause();
+            this.play();
+        }
+    }
+};
