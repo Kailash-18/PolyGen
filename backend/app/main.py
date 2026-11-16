@@ -8,6 +8,7 @@ import uuid
 import json
 from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -44,6 +45,22 @@ app.mount("/outputs", StaticFiles(directory=str(settings.OUTPUTS_DIR)), name="ou
 VIEWER_DIR = Path(__file__).resolve().parent.parent.parent / "viewer"
 if VIEWER_DIR.exists():
     app.mount("/viewer", StaticFiles(directory=str(VIEWER_DIR), html=True), name="viewer")
+
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/viewer/")
+
+@app.get("/digital")
+async def digital_redirect():
+    return RedirectResponse(url="/viewer/build.html")
+
+@app.get("/build")
+async def build_redirect():
+    return RedirectResponse(url="/viewer/build.html")
+
+@app.get("/physical")
+async def physical_redirect():
+    return RedirectResponse(url="/viewer/")
 
 SAMPLES_DIR = Path(__file__).resolve().parent.parent / "samples"
 
@@ -257,3 +274,91 @@ async def get_model(model_id: str):
         raise HTTPException(status_code=404, detail="Model not found")
     with open(meta_file, "r", encoding="utf-8") as meta_f:
         return json.load(meta_f)
+
+
+from app.pipeline.bom import generate_assembly_bom, list_available_boms, estimate_manufacturing_cost, AssemblyBOM
+
+@app.get("/api/models/{model_id}/bom", response_model=AssemblyBOM)
+async def get_model_bom(model_id: str):
+    """
+    Returns verified Bill of Materials, component weights, materials, and manufacturing costs.
+    """
+    return generate_assembly_bom(model_id)
+
+@app.get("/api/boms")
+async def list_all_boms():
+    return {"boms": list_available_boms()}
+
+
+from app.pipeline.motion import calculate_progressive_layer_explosion, calculate_helical_pose, HelicalTrajectory
+
+@app.get("/api/models/{model_id}/kinematics")
+async def get_model_kinematics(model_id: str, progress: float = 0.5):
+    """
+    Returns multi-stage kinematic trajectory keyframes and helical unscrew calculations.
+    """
+    assembly = AssemblyEngine.get_assembly(model_id)
+    comp_dicts = [c.model_dump() for c in assembly.components]
+    kinematic_poses = calculate_progressive_layer_explosion(comp_dicts, progress)
+    return {
+        "model_id": model_id,
+        "global_progress": progress,
+        "kinematics": kinematic_poses
+    }
+
+
+from app.pipeline.box_eval import evaluate_timeline_clearance
+
+class ClearanceRequest(BaseModel):
+    min_clearance_mm: float = Field(default=3.0, ge=0.5, le=20.0)
+    steps: int = Field(default=15, ge=5, le=50)
+
+@app.post("/api/models/{model_id}/validate-clearance")
+async def validate_model_clearance(model_id: str, req: ClearanceRequest):
+    """
+    Performs continuous 3D collision detection and safety clearance verification along trajectory.
+    """
+    assembly = AssemblyEngine.get_assembly(model_id)
+    comp_dicts = [c.model_dump() for c in assembly.components]
+    report = evaluate_timeline_clearance(comp_dicts, progress_steps=req.steps, min_clearance_mm=req.min_clearance_mm)
+    return {
+        "model_id": model_id,
+        "clearance_report": report
+    }
+
+
+from app.pipeline.codegen import generate_standalone_viewer_bundle, generate_pbr_material_code
+
+@app.get("/api/models/{model_id}/codegen/threejs")
+async def get_model_threejs_code(model_id: str):
+    """
+    Returns downloadable production-ready Three.js JavaScript and HTML bundle.
+    """
+    bundle = generate_standalone_viewer_bundle(model_id, f"PolyGen Asset: {model_id.upper()}")
+    return {
+        "model_id": model_id,
+        "format": "html_threejs_bundle",
+        "code": bundle
+    }
+
+
+class ProceduralSynthRequest(BaseModel):
+    name: str = "custom_assembly"
+    geometry_type: str = "box"
+    material: str = "aluminum_7075"
+    dimensions_cm: tuple[float, float, float] = (15.0, 10.0, 5.0)
+
+@app.post("/api/models/generate-procedural")
+async def generate_procedural_assembly(req: ProceduralSynthRequest):
+    """
+    Dynamically generates a parametric mechanical assembly with physical properties and BOM.
+    """
+    from app.pipeline.bom import estimate_part_specs, estimate_manufacturing_cost
+    specs = estimate_part_specs("custom_part", req.name, req.dimensions_cm, req.geometry_type, req.material)
+    cost = estimate_manufacturing_cost(specs["material_id"], specs["mass_grams"], "cnc_milling_5axis")
+    return {
+        "name": req.name,
+        "geometry_type": req.geometry_type,
+        "physical_specs": specs,
+        "cost_analysis": cost
+    }
