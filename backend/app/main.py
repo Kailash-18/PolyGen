@@ -257,3 +257,17 @@ async def get_model(model_id: str):
         raise HTTPException(status_code=404, detail="Model not found")
     with open(meta_file, "r", encoding="utf-8") as meta_f:
         return json.load(meta_f)
+
+
+from app.pipeline.bom import generate_assembly_bom, list_available_boms, estimate_manufacturing_cost, AssemblyBOM
+
+@app.get("/api/models/{model_id}/bom", response_model=AssemblyBOM)
+async def get_model_bom(model_id: str):
+    """
+    Returns verified Bill of Materials, component weights, materials, and manufacturing costs.
+    """
+    return generate_assembly_bom(model_id)
+
+@app.get("/api/boms")
+async def list_all_boms():
+    return {"boms": list_available_boms()}
