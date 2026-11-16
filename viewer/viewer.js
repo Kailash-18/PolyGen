@@ -1251,3 +1251,48 @@ renderer.setAnimationLoop(() => {
   asm.render();
 });
 window.__vre = { build, asm, get state() { return { mode, parts: mode === "3d" ? asm.parts.length : parts.length, ghosts: ghosts.length, selected, removed, affected: [...affected] }; }, select };
+
+
+// ============================================================================
+// PolyGen Interactive Component BOM Inspector Overlay
+// ============================================================================
+window.PolyGenBOMInspector = {
+    activePart: null,
+    
+    inspectComponent: function(componentId, label, material, massGrams, costUSD) {
+        this.activePart = { componentId, label, material, massGrams, costUSD };
+        let drawer = document.getElementById("bomInspectorDrawer");
+        if (!drawer) {
+            drawer = document.createElement("div");
+            drawer.id = "bomInspectorDrawer";
+            drawer.style.cssText = "position:fixed; right:20px; top:80px; width:300px; background:rgba(15,23,42,0.92); backdrop-filter:blur(16px); border:1px solid rgba(59,130,246,0.3); border-radius:12px; padding:16px; color:#fff; font-family:sans-serif; z-index:9999; box-shadow:0 20px 40px rgba(0,0,0,0.5);";
+            document.body.appendChild(drawer);
+        }
+        drawer.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px;">
+                <span style="font-size:12px; font-weight:700; color:#60a5fa; text-transform:uppercase; letter-spacing:0.05em;">BOM Telemetry</span>
+                <button onclick="document.getElementById('bomInspectorDrawer').style.display='none'" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:16px;">&times;</button>
+            </div>
+            <div style="font-size:15px; font-weight:600; margin-bottom:6px; color:#f8fafc;">${label || componentId}</div>
+            <div style="font-size:12px; color:#94a3b8; margin-bottom:12px;">ID: ${componentId}</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px;">
+                <div style="background:rgba(255,255,255,0.05); padding:8px; border-radius:6px;">
+                    <div style="color:#94a3b8; font-size:10px;">MATERIAL</div>
+                    <div style="color:#38bdf8; font-weight:600;">${material || 'Aerospace Al-7075'}</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.05); padding:8px; border-radius:6px;">
+                    <div style="color:#94a3b8; font-size:10px;">EST. MASS</div>
+                    <div style="color:#34d399; font-weight:600;">${massGrams || 145} g</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.05); padding:8px; border-radius:6px;">
+                    <div style="color:#94a3b8; font-size:10px;">MANUFACTURING</div>
+                    <div style="color:#fbbf24; font-weight:600;">5-Axis CNC</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.05); padding:8px; border-radius:6px;">
+                    <div style="color:#f472b6; font-weight:600;">$${costUSD || '24.50'}</div>
+                </div>
+            </div>
+        `;
+        drawer.style.display = "block";
+    }
+};
