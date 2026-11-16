@@ -288,3 +288,23 @@ async def get_model_kinematics(model_id: str, progress: float = 0.5):
         "global_progress": progress,
         "kinematics": kinematic_poses
     }
+
+
+from app.pipeline.box_eval import evaluate_timeline_clearance
+
+class ClearanceRequest(BaseModel):
+    min_clearance_mm: float = Field(default=3.0, ge=0.5, le=20.0)
+    steps: int = Field(default=15, ge=5, le=50)
+
+@app.post("/api/models/{model_id}/validate-clearance")
+async def validate_model_clearance(model_id: str, req: ClearanceRequest):
+    """
+    Performs continuous 3D collision detection and safety clearance verification along trajectory.
+    """
+    assembly = AssemblyEngine.get_assembly(model_id)
+    comp_dicts = [c.model_dump() for c in assembly.components]
+    report = evaluate_timeline_clearance(comp_dicts, progress_steps=req.steps, min_clearance_mm=req.min_clearance_mm)
+    return {
+        "model_id": model_id,
+        "clearance_report": report
+    }
