@@ -103,3 +103,29 @@ function createHollowShell() {{
     return outer;
 }}
 """
+
+
+def generate_pbr_material_code(
+    material_id: str,
+    color_hex: str = "#3b82f6",
+    roughness: float = 0.25,
+    metalness: float = 0.85,
+    clearcoat: float = 0.4
+) -> str:
+    """
+    Generates Three.js MeshPhysicalMaterial JavaScript snippet.
+    """
+    return f"""// Procedural PBR Physical Shader Material for {material_id}
+function createPBRMaterial_{material_id.replace("-", "_")}() {{
+    const mat = new THREE.MeshPhysicalMaterial({{
+        color: new THREE.Color('{color_hex}'),
+        metalness: {metalness},
+        roughness: {roughness},
+        clearcoat: {clearcoat},
+        clearcoatRoughness: 0.1,
+        reflectivity: 0.9,
+        flatShading: false
+    }});
+    return mat;
+}}
+"""
