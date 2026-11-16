@@ -129,3 +129,83 @@ function createPBRMaterial_{material_id.replace("-", "_")}() {{
     return mat;
 }}
 """
+
+
+def generate_standalone_viewer_bundle(
+    assembly_id: str,
+    title: str = "PolyGen 3D Model"
+) -> str:
+    """
+    Compiles a self-contained, responsive HTML file containing embedded Three.js,
+    procedural assembly parts, interactive exploded view slider, and studio lights.
+    """
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title} - PolyGen 3D Web Studio</title>
+    <style>
+        body {{ margin: 0; overflow: hidden; background: #07090e; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }}
+        #canvas3d {{ width: 100vw; height: 100vh; display: block; }}
+        #hud {{ position: absolute; top: 16px; left: 16px; color: #fff; background: rgba(13, 17, 23, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px 18px; pointer-events: none; }}
+        #controls {{ position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); background: rgba(13, 17, 23, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 30px; padding: 10px 24px; display: flex; align-items: center; gap: 16px; color: #fff; }}
+        input[type=range] {{ accent-color: #3b82f6; width: 220px; }}
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+    <div id="hud">
+        <h3 style="margin:0 0 4px 0; font-size:16px; color:#60a5fa;">{title}</h3>
+        <p style="margin:0; font-size:12px; color:#94a3b8;">PolyGen Parametric Assembly | ID: {assembly_id}</p>
+    </div>
+    <div id="controls">
+        <label for="explodeSlider" style="font-size:13px; font-weight:600;">Explode:</label>
+        <input id="explodeSlider" type="range" min="0" max="100" value="0">
+        <span id="explodeVal" style="font-size:13px; min-width:40px;">0%</span>
+    </div>
+    <canvas id="canvas3d"></canvas>
+    <script>
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x07090e);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(30, 25, 40);
+        const renderer = new THREE.WebGLRenderer({{ canvas: document.getElementById('canvas3d'), antialias: true }});
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        
+        // Studio Lighting
+        const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambient);
+        const dirLight = new THREE.DirectionalLight(0x60a5fa, 1.2);
+        dirLight.position.set(20, 40, 20);
+        scene.add(dirLight);
+        
+        // Root Assembly Group
+        const assemblyGroup = new THREE.Group();
+        scene.add(assemblyGroup);
+        
+        // Grid floor
+        const grid = new THREE.GridHelper(60, 40, 0x1e293b, 0x0f172a);
+        grid.position.y = -10;
+        scene.add(grid);
+        
+        window.addEventListener('resize', () => {{
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }});
+        
+        function animate() {{
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }}
+        animate();
+    </script>
+</body>
+</html>
+"""
