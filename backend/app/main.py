@@ -271,3 +271,20 @@ async def get_model_bom(model_id: str):
 @app.get("/api/boms")
 async def list_all_boms():
     return {"boms": list_available_boms()}
+
+
+from app.pipeline.motion import calculate_progressive_layer_explosion, calculate_helical_pose, HelicalTrajectory
+
+@app.get("/api/models/{model_id}/kinematics")
+async def get_model_kinematics(model_id: str, progress: float = 0.5):
+    """
+    Returns multi-stage kinematic trajectory keyframes and helical unscrew calculations.
+    """
+    assembly = AssemblyEngine.get_assembly(model_id)
+    comp_dicts = [c.model_dump() for c in assembly.components]
+    kinematic_poses = calculate_progressive_layer_explosion(comp_dicts, progress)
+    return {
+        "model_id": model_id,
+        "global_progress": progress,
+        "kinematics": kinematic_poses
+    }
