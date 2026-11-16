@@ -254,3 +254,85 @@ def estimate_part_specs(
         "volume_cm3": vol,
         "mass_grams": mass
     }
+
+
+MANUFACTURING_PROCESSES: Dict[str, Dict[str, Any]] = {
+    "cnc_milling_5axis": {
+        "name": "5-Axis High-Precision CNC Milling",
+        "machine_hourly_rate_usd": 68.0,
+        "setup_cost_usd": 55.0,
+        "finishing_per_part_usd": 4.50,
+        "tolerance_mm": 0.015,
+        "applicable_categories": ["metal", "polymer"]
+    },
+    "injection_molding": {
+        "name": "High-Volume Precision Injection Molding",
+        "machine_hourly_rate_usd": 22.0,
+        "tooling_die_amortized_usd": 8.50,
+        "finishing_per_part_usd": 0.80,
+        "tolerance_mm": 0.05,
+        "applicable_categories": ["polymer", "elastomer"]
+    },
+    "sls_3d_printing": {
+        "name": "Direct Metal / Polymer Selective Laser Sintering (SLS)",
+        "machine_hourly_rate_usd": 42.0,
+        "setup_cost_usd": 15.0,
+        "finishing_per_part_usd": 6.00,
+        "tolerance_mm": 0.08,
+        "applicable_categories": ["metal", "polymer", "composite"]
+    },
+    "sheet_metal_laser_stamping": {
+        "name": "Fiber Laser Cutting & Progressive Stamping",
+        "machine_hourly_rate_usd": 32.0,
+        "setup_cost_usd": 25.0,
+        "finishing_per_part_usd": 1.50,
+        "tolerance_mm": 0.04,
+        "applicable_categories": ["metal"]
+    },
+    "die_casting": {
+        "name": "High-Pressure Die Casting (HPDC)",
+        "machine_hourly_rate_usd": 28.0,
+        "tooling_die_amortized_usd": 12.00,
+        "finishing_per_part_usd": 2.20,
+        "tolerance_mm": 0.05,
+        "applicable_categories": ["metal"]
+    },
+    "pcb_smt_assembly": {
+        "name": "Automated SMT Pick-and-Place & Reflow Soldering",
+        "machine_hourly_rate_usd": 45.0,
+        "setup_cost_usd": 20.0,
+        "finishing_per_part_usd": 3.00,
+        "tolerance_mm": 0.02,
+        "applicable_categories": ["composite"]
+    }
+}
+
+def estimate_manufacturing_cost(
+    material_id: str,
+    mass_grams: float,
+    process: str,
+    batch_size: int = 250
+) -> Dict[str, float]:
+    """
+    Computes unit part cost factoring raw materials, machine runtime, tooling, and surface treatment.
+    """
+    mat = MATERIAL_REGISTRY.get(material_id, MATERIAL_REGISTRY["aluminum_6061"])
+    proc = MANUFACTURING_PROCESSES.get(process, MANUFACTURING_PROCESSES["cnc_milling_5axis"])
+
+    raw_material_cost = (mass_grams / 1000.0) * mat.cost_usd_per_kg * 1.15
+    setup_amortized = proc.get("setup_cost_usd", 20.0) / max(1, batch_size)
+    tooling_amortized = proc.get("tooling_die_amortized_usd", 0.0)
+    cycle_time_hours = max(0.04, (mass_grams / 500.0) * 0.15)
+    machine_cost = cycle_time_hours * proc["machine_hourly_rate_usd"]
+    finishing_cost = proc.get("finishing_per_part_usd", 2.0)
+
+    total_unit_cost = raw_material_cost + setup_amortized + tooling_amortized + machine_cost + finishing_cost
+
+    return {
+        "raw_material_cost_usd": round(raw_material_cost, 2),
+        "setup_amortized_usd": round(setup_amortized, 2),
+        "tooling_amortized_usd": round(tooling_amortized, 2),
+        "machine_labor_cost_usd": round(machine_cost, 2),
+        "finishing_cost_usd": round(finishing_cost, 2),
+        "total_cost_usd": round(total_unit_cost, 2)
+    }
