@@ -323,3 +323,25 @@ async def get_model_threejs_code(model_id: str):
         "format": "html_threejs_bundle",
         "code": bundle
     }
+
+
+class ProceduralSynthRequest(BaseModel):
+    name: str = "custom_assembly"
+    geometry_type: str = "box"
+    material: str = "aluminum_7075"
+    dimensions_cm: tuple[float, float, float] = (15.0, 10.0, 5.0)
+
+@app.post("/api/models/generate-procedural")
+async def generate_procedural_assembly(req: ProceduralSynthRequest):
+    """
+    Dynamically generates a parametric mechanical assembly with physical properties and BOM.
+    """
+    from app.pipeline.bom import estimate_part_specs, estimate_manufacturing_cost
+    specs = estimate_part_specs("custom_part", req.name, req.dimensions_cm, req.geometry_type, req.material)
+    cost = estimate_manufacturing_cost(specs["material_id"], specs["mass_grams"], "cnc_milling_5axis")
+    return {
+        "name": req.name,
+        "geometry_type": req.geometry_type,
+        "physical_specs": specs,
+        "cost_analysis": cost
+    }
