@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="/viewer/style.css" />
 <link rel="stylesheet" href="/viewer/labswitch.css" />
 <link rel="stylesheet" href="/viewer/tour.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
@@ -19,7 +20,15 @@
 <link rel="stylesheet" href="/viewer/landing.css" />
 <link rel="stylesheet" href="/viewer/nav.css" />
 <link rel="stylesheet" href="/viewer/auth.css" />
-<script>/* arriving from the other lab: start covered, lab-transit.js opens the cover */try { var lt = sessionStorage.getItem("lab-transit"); if (lt === "physical" || lt === "digital") document.documentElement.classList.add("lab-arriving", "lt-" + lt); } catch (e) {}</script>
+<script>
+  try {
+    if (!localStorage.getItem("polygen_auth") && !sessionStorage.getItem("polygen_auth")) {
+      document.documentElement.classList.add("auth-gated");
+    }
+    var lt = sessionStorage.getItem("lab-transit");
+    if (lt === "physical" || lt === "digital") document.documentElement.classList.add("lab-arriving", "lt-" + lt);
+  } catch (e) {}
+</script>
 <script src="/viewer/lab-transit.js" defer></script>
 <script src="/viewer/sample-cue.js" defer></script>
 </head>

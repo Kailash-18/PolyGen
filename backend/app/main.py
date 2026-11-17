@@ -69,8 +69,8 @@ SAMPLES_DIR = Path(__file__).resolve().parent.parent / "samples"
 # =====================================================================
 
 class LoginRequest(BaseModel):
-    username: str = Field(default="admin", description="Admin username")
-    password: str = Field(default="admin", description="Admin password")
+    username: str = Field(..., description="Username entered by user")
+    password: str = Field(..., description="Password entered by user")
 
 class RegisterRequest(BaseModel):
     username: str = Field(..., description="Desired username")
@@ -91,13 +91,13 @@ USERS_DB = {
 @app.post("/api/auth/login")
 async def auth_login(req: LoginRequest):
     """
-    Validates user credentials. Default credentials: username='admin', password='admin'.
+    Validates user credentials securely without revealing credentials in error messages.
     """
     user = USERS_DB.get(req.username)
     if not user or user["password"] != req.password:
         raise HTTPException(
             status_code=401,
-            detail="Authentication failed: Invalid credentials. Default credentials are username='admin' and password='admin'."
+            detail="Incorrect credentials. Please check your username and password."
         )
 
     return {
