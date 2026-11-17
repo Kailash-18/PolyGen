@@ -362,3 +362,197 @@ async def generate_procedural_assembly(req: ProceduralSynthRequest):
         "physical_specs": specs,
         "cost_analysis": cost
     }
+
+
+# =====================================================================
+# Week 4: Game Engine Exporter, Multi-LOD & Studio Staging Endpoints
+# =====================================================================
+
+from app.pipeline.lod import LODGenerator
+from app.pipeline.collision_hull import CollisionHullGenerator
+from app.pipeline.pbr_presets import PBRMaterialPresetEngine
+from app.pipeline.hdri_staging import HDRIStagingEngine
+from app.pipeline.game_engine_exporter import UnrealEngineExporter, UnityPrefabExporter
+
+
+@app.get("/api/materials/presets")
+async def list_pbr_material_presets():
+    """
+    Returns physically calibrated PBR material presets (Cyberpunk, Rust, Sci-Fi Matte, Titanium, Obsidian, Gold).
+    """
+    return {
+        "presets": PBRMaterialPresetEngine.list_presets(),
+        "count": len(PBRMaterialPresetEngine.PRESETS)
+    }
+
+
+class ApplyMaterialRequest(BaseModel):
+    preset_id: str = Field(default="cyberpunk_neon", description="Material preset identifier")
+
+
+@app.post("/api/materials/apply/{model_id}")
+async def apply_pbr_material(model_id: str, req: ApplyMaterialRequest):
+    """
+    Bakes and applies the specified PBR material preset to the asset.
+    """
+    preset = PBRMaterialPresetEngine.get_preset(req.preset_id)
+    if not preset:
+        raise HTTPException(status_code=400, detail=f"Invalid preset ID '{req.preset_id}'")
+
+    model_dir = settings.OUTPUTS_DIR / model_id
+    if not model_dir.exists():
+        raise HTTPException(status_code=404, detail="Model output directory not found")
+
+    # Load existing albedo if available
+    from PIL import Image
+    base_albedo = None
+    albedo_path = model_dir / "albedo.png"
+    if albedo_path.exists():
+        try:
+            base_albedo = Image.open(albedo_path)
+        except Exception:
+            base_albedo = None
+
+    baked = PBRMaterialPresetEngine.bake_preset_maps(req.preset_id, resolution=512, base_albedo=base_albedo)
+    for map_name, img in baked.items():
+        img.save(model_dir / f"{map_name}.png")
+
+    return {
+        "model_id": model_id,
+        "applied_preset": req.preset_id,
+        "preset_name": preset.name,
+        "category": preset.category,
+        "maps_updated": list(baked.keys())
+    }
+
+
+@app.get("/api/hdri/presets")
+async def list_hdri_presets():
+    """
+    Returns photometric studio environment lighting configurations.
+    """
+    return {
+        "presets": HDRIStagingEngine.list_presets(),
+        "count": len(HDRIStagingEngine.PRESETS)
+    }
+
+
+@app.post("/api/lod/generate/{model_id}")
+async def generate_model_lods(model_id: str):
+    """
+    Generates discrete LOD0, LOD1, LOD2, and LOD3 meshes with Hausdorff distance error calculation.
+    """
+    model_dir = settings.OUTPUTS_DIR / model_id
+    obj_path = model_dir / f"{model_id}.obj"
+    glb_path = model_dir / f"{model_id}.glb"
+
+    import trimesh
+    mesh = None
+    if obj_path.exists():
+        mesh = trimesh.load(str(obj_path))
+    elif glb_path.exists():
+        mesh = trimesh.load(str(glb_path), force="mesh")
+
+    if mesh is None or not isinstance(mesh, trimesh.Trimesh):
+        # Generate representative mesh if none exists
+        mesh = geometry_engine.generate_mesh(f"asset {model_id}")
+
+    lod_gen = LODGenerator()
+    results = lod_gen.generate_lods(mesh)
+    exported_paths = lod_gen.export_lods(model_dir, model_id, results["lods"])
+
+    return {
+        "model_id": model_id,
+        "specifications": results["specifications"],
+        "summary": results["summary"],
+        "exported_files": exported_paths
+    }
+
+
+@app.post("/api/collision/generate/{model_id}")
+async def generate_model_collision(model_id: str):
+    """
+    Generates Convex Hull, OBB, AABB, and Capsule collision primitives.
+    """
+    model_dir = settings.OUTPUTS_DIR / model_id
+    obj_path = model_dir / f"{model_id}.obj"
+
+    import trimesh
+    mesh = None
+    if obj_path.exists():
+        mesh = trimesh.load(str(obj_path))
+
+    if mesh is None or not isinstance(mesh, trimesh.Trimesh):
+        mesh = geometry_engine.generate_mesh(f"asset {model_id}")
+
+    coll_gen = CollisionHullGenerator()
+    results = coll_gen.generate_all_colliders(mesh)
+    ucx_path = coll_gen.export_unreal_collision_file(model_dir, model_id, results["meshes"])
+
+    return {
+        "model_id": model_id,
+        "collision_manifest": results["manifest"],
+        "recommended_primary": results["recommended_primary"],
+        "unreal_collision_file": ucx_path
+    }
+
+
+class GameEngineExportRequest(BaseModel):
+    engine: str = Field(default="unreal", description="Target engine: 'unreal' (UE5) or 'unity'")
+    include_lods: bool = Field(default=True, description="Generate multi-LODs")
+    include_collision: bool = Field(default=True, description="Generate physics collision hulls")
+
+
+@app.post("/api/export/game-engine/{model_id}")
+async def export_for_game_engine(model_id: str, req: GameEngineExportRequest):
+    """
+    Produces complete, production-ready ZIP package for Unreal Engine 5 or Unity URP/HDRP.
+    """
+    model_dir = settings.OUTPUTS_DIR / model_id
+    obj_path = model_dir / f"{model_id}.obj"
+
+    import trimesh
+    from PIL import Image
+
+    mesh = None
+    if obj_path.exists():
+        mesh = trimesh.load(str(obj_path))
+    if mesh is None or not isinstance(mesh, trimesh.Trimesh):
+        mesh = geometry_engine.generate_mesh(f"asset {model_id}")
+
+    # Load existing PBR maps
+    pbr_maps = {}
+    for map_key in ["albedo", "normal", "roughness", "metalness"]:
+        mp = model_dir / f"{map_key}.png"
+        if mp.exists():
+            try:
+                pbr_maps[map_key] = Image.open(mp)
+            except Exception:
+                pass
+
+    if req.engine.lower() == "unity":
+        pkg = UnityPrefabExporter.create_package(
+            mesh=mesh,
+            asset_name=model_id,
+            output_dir=model_dir,
+            pbr_maps=pbr_maps if pbr_maps else None,
+            generate_lods=req.include_lods
+        )
+    else:
+        pkg = UnrealEngineExporter.create_package(
+            mesh=mesh,
+            asset_name=model_id,
+            output_dir=model_dir,
+            pbr_maps=pbr_maps if pbr_maps else None,
+            generate_lods=req.include_lods,
+            generate_collision=req.include_collision
+        )
+
+    return {
+        "model_id": model_id,
+        "engine": req.engine.lower(),
+        "package_filename": Path(pkg["package_path"]).name,
+        "download_url": f"/outputs/{model_id}/{Path(pkg['package_path']).name}",
+        "file_count": pkg["file_count"],
+        "manifest": pkg["manifest"]
+    }

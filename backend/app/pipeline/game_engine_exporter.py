@@ -150,3 +150,141 @@ class UnrealEngineExporter:
             "file_count": len(files_created),
             "manifest": manifest
         }
+
+
+class UnityPrefabExporter:
+    """
+    Exports asset packages compliant with Unity 2022/6000 LTS URP/HDRP:
+      - Prefab Mesh: <AssetName>.glb
+      - Channel-packed Metallic-Smoothness map (R=Metallic, A=1.0-Roughness)
+      - LODGroup screen percentage configuration
+      - Unity .prefab.json component description
+    """
+
+    @classmethod
+    def pack_metallic_smoothness(
+        cls,
+        roughness_img: Optional[Image.Image],
+        metalness_img: Optional[Image.Image],
+        resolution: int = 512
+    ) -> Image.Image:
+        """
+        Creates Unity standard Metallic-Smoothness map:
+          Red channel: Metallic
+          Green channel: 0
+          Blue channel: 0
+          Alpha channel: Smoothness (1.0 - Roughness)
+        """
+        res = resolution
+        m_arr = np.zeros((res, res), dtype=np.uint8)
+        s_arr = np.full((res, res), 180, dtype=np.uint8)
+
+        if metalness_img:
+            m_arr = np.array(metalness_img.resize((res, res)).convert("L"), dtype=np.uint8)
+        if roughness_img:
+            r_arr = np.array(roughness_img.resize((res, res)).convert("L"), dtype=np.uint8)
+            s_arr = 255 - r_arr
+
+        packed = np.zeros((res, res, 4), dtype=np.uint8)
+        packed[:, :, 0] = m_arr  # R = Metallic
+        packed[:, :, 1] = 0      # G = Unused
+        packed[:, :, 2] = 0      # B = Unused
+        packed[:, :, 3] = s_arr  # A = Smoothness
+
+        return Image.fromarray(packed, mode="RGBA")
+
+    @classmethod
+    def create_package(
+        cls,
+        mesh: trimesh.Trimesh,
+        asset_name: str,
+        output_dir: Path,
+        pbr_maps: Optional[Dict[str, Image.Image]] = None,
+        generate_lods: bool = True
+    ) -> Dict[str, Any]:
+        output_dir = Path(output_dir)
+        unity_dir = output_dir / f"Unity_{asset_name}"
+        unity_dir.mkdir(parents=True, exist_ok=True)
+
+        clean_name = asset_name.replace(" ", "_")
+        files_created: List[str] = []
+
+        # 1. Main Mesh
+        mesh_glb = GLTFPackager.assemble_glb(mesh, clean_name)
+        main_mesh_path = unity_dir / f"{clean_name}.glb"
+        with open(main_mesh_path, "wb") as f:
+            f.write(mesh_glb)
+        files_created.append(str(main_mesh_path))
+
+        # 2. Textures
+        if pbr_maps:
+            if "albedo" in pbr_maps and pbr_maps["albedo"]:
+                p = unity_dir / f"{clean_name}_Albedo.png"
+                pbr_maps["albedo"].save(p)
+                files_created.append(str(p))
+            if "normal" in pbr_maps and pbr_maps["normal"]:
+                p = unity_dir / f"{clean_name}_Normal.png"
+                pbr_maps["normal"].save(p)
+                files_created.append(str(p))
+
+            # Channel packed Metallic-Smoothness
+            packed_ms = cls.pack_metallic_smoothness(
+                pbr_maps.get("roughness"),
+                pbr_maps.get("metalness")
+            )
+            p = unity_dir / f"{clean_name}_MetallicSmoothness.png"
+            packed_ms.save(p)
+            files_created.append(str(p))
+
+        # 3. Multi-LODs
+        lod_data = {}
+        if generate_lods:
+            lod_gen = LODGenerator()
+            res_lods = lod_gen.generate_lods(mesh)
+            lod_data = res_lods["specifications"]
+            for lod_name, lod_mesh in res_lods["lods"].items():
+                if lod_name != "LOD0":
+                    lod_glb = GLTFPackager.assemble_glb(lod_mesh, f"{clean_name}_{lod_name}")
+                    p = unity_dir / f"{clean_name}_{lod_name}.glb"
+                    with open(p, "wb") as f:
+                        f.write(lod_glb)
+                    files_created.append(str(p))
+
+        # 4. Unity Prefab Descriptor Manifest
+        manifest = {
+            "unity_version": "2022.3+ LTS / Unity 6",
+            "render_pipeline": "Universal Render Pipeline (URP) / HDRP",
+            "prefab_name": f"{clean_name}.prefab",
+            "components": [
+                {"type": "Transform", "position": [0, 0, 0], "rotation": [0, 0, 0, 1], "scale": [1, 1, 1]},
+                {"type": "MeshFilter", "sharedMesh": f"{clean_name}.glb"},
+                {"type": "MeshRenderer", "sharedMaterial": f"{clean_name}_Material.mat"},
+                {"type": "LODGroup", "lods": [
+                    {"screenRelativeTransitionHeight": 0.60, "renderers": [f"{clean_name}.glb"]},
+                    {"screenRelativeTransitionHeight": 0.30, "renderers": [f"{clean_name}_LOD1.glb"]},
+                    {"screenRelativeTransitionHeight": 0.10, "renderers": [f"{clean_name}_LOD2.glb"]},
+                    {"screenRelativeTransitionHeight": 0.03, "renderers": [f"{clean_name}_LOD3.glb"]}
+                ]},
+                {"type": "MeshCollider", "convex": True}
+            ],
+            "lod_specifications": lod_data
+        }
+
+        manifest_path = unity_dir / "UnityPackageManifest.json"
+        with open(manifest_path, "w", encoding="utf-8") as f:
+            json.dump(manifest, f, indent=2)
+        files_created.append(str(manifest_path))
+
+        # 5. Package into ZIP
+        zip_path = output_dir / f"{clean_name}_UnityPrefab.zip"
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            for file_str in files_created:
+                f_path = Path(file_str)
+                zf.write(f_path, arcname=f"{unity_dir.name}/{f_path.name}")
+
+        return {
+            "package_path": str(zip_path),
+            "directory": str(unity_dir),
+            "file_count": len(files_created),
+            "manifest": manifest
+        }
