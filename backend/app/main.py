@@ -97,7 +97,7 @@ async def auth_login(req: LoginRequest):
     if not user or user["password"] != req.password:
         raise HTTPException(
             status_code=401,
-            detail="Incorrect credentials. Please check your username and password."
+            detail="Wrong credentials"
         )
 
     return {
