@@ -134,3 +134,36 @@ def test_game_engine_export_unity(client):
     assert data["engine"] == "unity"
     assert data["package_filename"].endswith(".zip")
 
+
+def test_auth_login_admin_success(client):
+    res = client.post("/api/auth/login", json={"username": "admin", "password": "admin"})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "authenticated"
+    assert "access_token" in data
+    assert data["user"]["username"] == "admin"
+    assert data["user"]["role"] == "SuperAdmin"
+
+
+def test_auth_login_invalid_credentials(client):
+    res = client.post("/api/auth/login", json={"username": "admin", "password": "wrongpassword"})
+    assert res.status_code == 401
+
+
+def test_auth_register_and_me(client):
+    res = client.post("/api/auth/register", json={
+        "username": "kailash",
+        "password": "securepassword123",
+        "email": "kailash@polygen.ai"
+    })
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "registered"
+
+    me = client.get("/api/auth/me")
+    assert me.status_code == 200
+    me_data = me.json()
+    assert me_data["authenticated"] is True
+    assert me_data["username"] == "admin"
+
+

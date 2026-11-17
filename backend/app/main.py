@@ -64,6 +64,98 @@ async def physical_redirect():
 
 SAMPLES_DIR = Path(__file__).resolve().parent.parent / "samples"
 
+# =====================================================================
+# Authentication & Security Terminal API (Admin Role)
+# =====================================================================
+
+class LoginRequest(BaseModel):
+    username: str = Field(default="admin", description="Admin username")
+    password: str = Field(default="admin", description="Admin password")
+
+class RegisterRequest(BaseModel):
+    username: str = Field(..., description="Desired username")
+    password: str = Field(..., description="Password")
+    email: str = Field(default="admin@polygen.ai", description="Email address")
+
+# In-memory registered users dictionary with default admin account
+USERS_DB = {
+    "admin": {
+        "username": "admin",
+        "password": "admin",
+        "display_name": "Administrator",
+        "role": "SuperAdmin",
+        "email": "admin@polygen.ai"
+    }
+}
+
+@app.post("/api/auth/login")
+async def auth_login(req: LoginRequest):
+    """
+    Validates user credentials. Default credentials: username='admin', password='admin'.
+    """
+    user = USERS_DB.get(req.username)
+    if not user or user["password"] != req.password:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication failed: Invalid credentials. Default credentials are username='admin' and password='admin'."
+        )
+
+    return {
+        "status": "authenticated",
+        "access_token": f"polygen-token-{uuid.uuid4()}",
+        "token_type": "bearer",
+        "user": {
+            "username": user["username"],
+            "display_name": user["display_name"],
+            "role": user["role"],
+            "email": user["email"],
+            "permissions": ["admin", "3d_export", "kinematics", "physical_studio", "digital_build"]
+        }
+    }
+
+@app.post("/api/auth/register")
+async def auth_register(req: RegisterRequest):
+    """
+    Registers a new user account into the system.
+    """
+    if req.username in USERS_DB and req.username != "admin":
+        raise HTTPException(status_code=400, detail="Username already exists")
+
+    USERS_DB[req.username] = {
+        "username": req.username,
+        "password": req.password,
+        "display_name": req.username.capitalize(),
+        "role": "StudioDeveloper",
+        "email": req.email
+    }
+
+    return {
+        "status": "registered",
+        "access_token": f"polygen-token-{uuid.uuid4()}",
+        "token_type": "bearer",
+        "user": {
+            "username": req.username,
+            "display_name": req.username.capitalize(),
+            "role": USERS_DB[req.username]["role"],
+            "email": req.email
+        }
+    }
+
+@app.get("/api/auth/me")
+async def auth_current_user():
+    """
+    Returns current authenticated admin profile.
+    """
+    admin = USERS_DB["admin"]
+    return {
+        "authenticated": True,
+        "username": admin["username"],
+        "display_name": admin["display_name"],
+        "role": admin["role"],
+        "email": admin["email"]
+    }
+
+
 class GenerationRequest(BaseModel):
     prompt: str = Field(..., json_schema_extra={"example": "A rusted medieval broadsword with a glowing blue sapphire in the hilt"})
     target_faces: int = Field(default=10000, description="Target polygon count after decimation")
