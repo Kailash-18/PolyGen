@@ -76,3 +76,61 @@ def test_generate_asset(client):
     assert "model_id" in data
     assert "urls" in data
     assert data["urls"]["glb"].endswith(".glb")
+
+
+def test_list_pbr_material_presets(client):
+    res = client.get("/api/materials/presets")
+    assert res.status_code == 200
+    data = res.json()
+    assert "presets" in data
+    assert len(data["presets"]) == 6
+
+
+def test_list_hdri_presets(client):
+    res = client.get("/api/hdri/presets")
+    assert res.status_code == 200
+    data = res.json()
+    assert "presets" in data
+    assert len(data["presets"]) == 4
+
+
+def test_generate_lods_api(client):
+    res = client.post("/api/lod/generate/sword-01")
+    assert res.status_code == 200
+    data = res.json()
+    assert "specifications" in data
+    assert "LOD0" in data["specifications"]
+    assert "LOD3" in data["specifications"]
+
+
+def test_generate_collision_api(client):
+    res = client.post("/api/collision/generate/sword-01")
+    assert res.status_code == 200
+    data = res.json()
+    assert "collision_manifest" in data
+    assert "convex_hull" in data["collision_manifest"]
+
+
+def test_game_engine_export_unreal(client):
+    res = client.post("/api/export/game-engine/sword-01", json={
+        "engine": "unreal",
+        "include_lods": True,
+        "include_collision": True
+    })
+    assert res.status_code == 200
+    data = res.json()
+    assert data["engine"] == "unreal"
+    assert data["package_filename"].endswith(".zip")
+
+
+def test_game_engine_export_unity(client):
+    res = client.post("/api/export/game-engine/sword-01", json={
+        "engine": "unity",
+        "include_lods": True,
+        "include_collision": False
+    })
+    assert res.status_code == 200
+    data = res.json()
+    assert data["engine"] == "unity"
+    assert data["package_filename"].endswith(".zip")
+
