@@ -120,8 +120,65 @@ class PBRMaterialPresetEngine:
 
     @classmethod
     def list_presets(cls) -> List[Dict[str, Any]]:
+        """Returns all preset metadata for frontend selection."""
         return [asdict(p) for p in cls.PRESETS.values()]
 
     @classmethod
     def get_preset(cls, preset_id: str) -> Optional[PBRMaterialPreset]:
         return cls.PRESETS.get(preset_id)
+
+    @classmethod
+    def bake_preset_maps(
+        cls,
+        preset_id: str,
+        resolution: int = 512,
+        base_albedo: Optional[Image.Image] = None
+    ) -> Dict[str, Image.Image]:
+        """
+        Bakes customized PBR texture maps (Albedo, Roughness, Metalness, Normal)
+        conforming to the selected material preset.
+        """
+        preset = cls.PRESETS.get(preset_id, cls.PRESETS["cyberpunk_neon"])
+        res = resolution
+
+        # 1. Albedo Map
+        if base_albedo is not None:
+            # Blend existing albedo with preset color
+            albedo_np = np.array(base_albedo.resize((res, res)).convert("RGB"), dtype=np.float32)
+            tint = np.array(preset.base_color_rgb, dtype=np.float32)
+            blended = np.clip(0.4 * albedo_np + 0.6 * tint, 0, 255).astype(np.uint8)
+            albedo_img = Image.fromarray(blended, mode="RGB")
+        else:
+            base_arr = np.zeros((res, res, 3), dtype=np.float32)
+            base_arr[:, :] = preset.base_color_rgb
+            noise = np.random.normal(0, 10, (res, res, 3))
+            albedo_np = np.clip(base_arr + noise, 0, 255).astype(np.uint8)
+            albedo_img = Image.fromarray(albedo_np, mode="RGB")
+
+        # 2. Roughness Map (Grayscale L)
+        roughness_val = int(np.clip(preset.roughness * 255, 0, 255))
+        r_arr = np.full((res, res), roughness_val, dtype=np.int16)
+        r_noise = np.random.randint(-12, 12, (res, res), dtype=np.int16)
+        roughness_img = Image.fromarray(np.clip(r_arr + r_noise, 0, 255).astype(np.uint8), mode="L")
+
+        # 3. Metalness Map (Grayscale L)
+        metalness_val = int(np.clip(preset.metalness * 255, 0, 255))
+        m_arr = np.full((res, res), metalness_val, dtype=np.uint8)
+        metalness_img = Image.fromarray(m_arr, mode="L")
+
+        # 4. Normal Map (RGB tangent space)
+        normal_arr = np.zeros((res, res, 3), dtype=np.uint8)
+        normal_arr[:, :, 0] = 128
+        normal_arr[:, :, 1] = 128
+        normal_arr[:, :, 2] = 255
+        pert_scale = int(8 * preset.normal_scale)
+        perturbation = np.random.randint(-pert_scale, pert_scale + 1, (res, res, 2), dtype=np.int16)
+        normal_arr[:, :, :2] = np.clip(normal_arr[:, :, :2] + perturbation, 0, 255).astype(np.uint8)
+        normal_img = Image.fromarray(normal_arr, mode="RGB")
+
+        return {
+            "albedo": albedo_img,
+            "roughness": roughness_img,
+            "metalness": metalness_img,
+            "normal": normal_img
+        }
