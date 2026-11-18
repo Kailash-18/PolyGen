@@ -696,3 +696,52 @@ async def export_model_usdz(model_id: str):
     )
     pkg["download_url"] = f"/outputs/{model_id}/{model_id}.usdz"
     return pkg
+
+from app.pipeline.vertex_cache_optimizer import VertexCacheOptimizer
+from app.pipeline.batch_orchestrator import BatchPipelineOrchestrator
+
+batch_orchestrator = BatchPipelineOrchestrator()
+
+@app.post("/api/models/{model_id}/physics/rigidbody")
+async def evaluate_model_rigidbody(model_id: str, density_kg_m3: float = 1200.0):
+    mesh = geometry_engine.generate_mesh(f"asset {model_id}")
+    rb = MeshPhysicsEvaluator.evaluate_mesh(mesh.vertices.tolist(), mesh.faces.tolist(), density_kg_m3)
+    return {
+        "model_id": model_id,
+        "mass_kg": rb.mass_kg,
+        "volume_m3": rb.volume_m3,
+        "center_of_mass": rb.center_of_mass,
+        "inertia_tensor": rb.inertia_tensor,
+        "principal_moments": rb.principal_moments,
+        "stability_tipping_angle_deg": rb.stability_tipping_angle_deg,
+        "is_stable": rb.is_stable,
+    }
+
+class BatchPipelineRequest(BaseModel):
+    asset_ids: List[str]
+    pipeline_stages: Optional[List[str]] = None
+
+@app.post("/api/pipeline/batch")
+async def submit_batch_pipeline(req: BatchPipelineRequest):
+    job = batch_orchestrator.submit_batch(req.asset_ids, req.pipeline_stages)
+    completed_job = batch_orchestrator.execute_job_synchronous(job.job_id)
+    return {
+        "job_id": completed_job.job_id,
+        "status": completed_job.status.value,
+        "progress": completed_job.progress,
+        "asset_count": len(completed_job.asset_ids),
+        "results": completed_job.results,
+    }
+
+@app.get("/api/pipeline/batch/{job_id}")
+async def get_batch_job_status(job_id: str):
+    job = batch_orchestrator.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Batch job not found")
+    return {
+        "job_id": job.job_id,
+        "status": job.status.value,
+        "progress": job.progress,
+        "asset_count": len(job.asset_ids),
+        "results": job.results,
+    }
