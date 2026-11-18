@@ -63,3 +63,23 @@ class MeshPhysicsEvaluator:
         Iyy = mass * (r_x2 + r_z2)
         Izz = mass * (r_x2 + r_y2)
         inertia_matrix = [[round(Ixx, 6), 0.0, 0.0], [0.0, round(Iyy, 6), 0.0], [0.0, 0.0, round(Izz, 6)]]
+
+        ys_raw = [v[1] for v in vertices]
+        base_y = min(ys_raw)
+        h_com = max(com[1] - base_y, 0.01)
+        xs_raw = [v[0] for v in vertices]
+        zs_raw = [v[2] for v in vertices]
+        half_width = max(max(xs_raw) - min(xs_raw), max(zs_raw) - min(zs_raw)) * 0.5
+        tipping_angle_rad = math.atan2(half_width, h_com)
+        tipping_angle_deg = math.degrees(tipping_angle_rad)
+        is_stable = tipping_angle_deg >= 20.0
+
+        return RigidBodyProperties(
+            mass_kg=round(mass, 4),
+            volume_m3=round(abs_vol, 6),
+            center_of_mass=[round(c, 4) for c in com],
+            inertia_tensor=inertia_matrix,
+            principal_moments=[round(Ixx, 6), round(Iyy, 6), round(Izz, 6)],
+            stability_tipping_angle_deg=round(tipping_angle_deg, 2),
+            is_stable=is_stable
+        )
