@@ -50,3 +50,21 @@ def Xform "{model_id}" (kind = "component")
     }}
 }}
 """
+
+    @classmethod
+    def create_usdz_package(cls, output_path: str, model_id: str, vertices: List[List[float]], faces: List[List[int]], normals: Optional[List[List[float]]] = None) -> Dict[str, Any]:
+        usda_text = cls.generate_usda(model_id, vertices, faces, normals)
+        usda_bytes = usda_text.encode("utf-8")
+        os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+        with zipfile.ZipFile(output_path, "w", compression=zipfile.ZIP_STORED) as zf:
+            zf.writestr(f"{model_id}.usda", usda_bytes)
+        file_size = os.path.getsize(output_path)
+        return {
+            "model_id": model_id,
+            "usdz_path": output_path,
+            "file_size_bytes": file_size,
+            "vertex_count": len(vertices),
+            "face_count": len(faces),
+            "format": "USDZ",
+            "ar_compatibility": ["iOS", "iPadOS", "visionOS", "macOS QuickLook"]
+        }
