@@ -30,3 +30,57 @@ class DracoMeshQuantizer:
             qz = int(round((z - min_z) / scale))
             quantized.append((max(0, min(max_int, qx)), max(0, min(max_int, qy)), max(0, min(max_int, qz))))
         return quantized, {"bounds_min": [min_x, min_y, min_z], "bounds_max": [max_x, max_y, max_z], "scale": scale, "bits": self.position_bits, "max_int": max_int}
+
+    def dequantize_positions(self, quantized: List[Tuple[int, int, int]], metadata: Dict[str, Any]) -> List[List[float]]:
+        min_x, min_y, min_z = metadata["bounds_min"]
+        scale = metadata["scale"]
+        return [[min_x + qx * scale, min_y + qy * scale, min_z + qz * scale] for qx, qy, qz in quantized]
+
+    def quantize_normals(self, normals: List[List[float]]) -> Tuple[List[Tuple[int, int]], Dict[str, Any]]:
+        max_int = (1 << self.normal_bits) - 1
+        quantized = []
+        for nx, ny, nz in normals:
+            norm = abs(nx) + abs(ny) + abs(nz) or 1.0
+            ox, oy = nx / norm, ny / norm
+            if nz < 0:
+                ox, oy = (1.0 - abs(oy)) * (1.0 if ox >= 0 else -1.0), (1.0 - abs(ox)) * (1.0 if oy >= 0 else -1.0)
+            qx = int(round(((ox + 1.0) * 0.5) * max_int))
+            qy = int(round(((oy + 1.0) * 0.5) * max_int))
+            quantized.append((max(0, min(max_int, qx)), max(0, min(max_int, qy))))
+        return quantized, {"bits": self.normal_bits, "encoding": "octahedral"}
+
+class DracoStreamEncoder:
+    """Delta encoding and run-length bitstream packer for quantized geometry buffers."""
+    @staticmethod
+    def delta_encode(integers: List[int]) -> List[int]:
+        if not integers: return []
+        deltas = [integers[0]]
+        for i in range(1, len(integers)):
+            deltas.append(integers[i] - integers[i - 1])
+        return deltas
+
+    @staticmethod
+    def delta_decode(deltas: List[int]) -> List[int]:
+        if not deltas: return []
+        values = [deltas[0]]
+        for i in range(1, len(deltas)):
+            values.append(values[-1] + deltas[i])
+        return values
+
+    @staticmethod
+    def pack_varint(value: int) -> bytes:
+        zigzag = (value << 1) ^ (value >> 31)
+        buf = bytearray()
+        while (zigzag & ~0x7F) != 0:
+            buf.append((zigzag & 0x7F) | 0x80)
+            zigzag >>= 7
+        buf.append(zigzag & 0x7F)
+        return bytes(buf)
+
+    @classmethod
+    def compress_stream(cls, values: List[int]) -> bytes:
+        deltas = cls.delta_encode(values)
+        out = bytearray()
+        for d in deltas:
+            out.extend(cls.pack_varint(d))
+        return bytes(out)
