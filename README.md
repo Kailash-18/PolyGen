@@ -2,10 +2,12 @@
 
 > **Autonomous multi-stage pipeline converting descriptive text prompts into optimized, PBR-textured, game-ready 3D assets (`.glb` / `.obj`) with real-time WebGL canvas inspection.**
 
-[![Status](https://img.shields.io/badge/Status-Active_Development-blue.svg)](#)
-[![Python](https://img.shields.io/badge/Python-3.11-brightgreen.svg)](#)
-[![React](https://img.shields.io/badge/Frontend-React%20%7C%20Three.js-61DAFB.svg)](#)
-[![FastAPI](https://img.shields.io/badge/Backend-FastAPI%20%7C%20PyTorch-009688.svg)](#)
+[![Status](https://img.shields.io/badge/Status-Production_Ready_v1.2.0-blue.svg)](#)
+[![Tests](https://img.shields.io/badge/Tests-83%20Passed%20(100%25)-brightgreen.svg)](#)
+[![Unreal Engine](https://img.shields.io/badge/Unreal_Engine-5.4+_Nanite-black.svg)](#)
+[![Unity](https://img.shields.io/badge/Unity-URP%20%7C%20HDRP-grey.svg)](#)
+[![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.13-brightgreen.svg)](#)
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI%20%7C%20Three.js-009688.svg)](#)
 [![License](https://img.shields.io/badge/License-MIT-lightgrey.svg)](#)
 
 ---

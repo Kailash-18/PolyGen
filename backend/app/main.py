@@ -64,6 +64,98 @@ async def physical_redirect():
 
 SAMPLES_DIR = Path(__file__).resolve().parent.parent / "samples"
 
+# =====================================================================
+# Authentication & Security Terminal API (Admin Role)
+# =====================================================================
+
+class LoginRequest(BaseModel):
+    username: str = Field(..., description="Username entered by user")
+    password: str = Field(..., description="Password entered by user")
+
+class RegisterRequest(BaseModel):
+    username: str = Field(..., description="Desired username")
+    password: str = Field(..., description="Password")
+    email: str = Field(default="admin@polygen.ai", description="Email address")
+
+# In-memory registered users dictionary with default admin account
+USERS_DB = {
+    "admin": {
+        "username": "admin",
+        "password": "admin",
+        "display_name": "Administrator",
+        "role": "SuperAdmin",
+        "email": "admin@polygen.ai"
+    }
+}
+
+@app.post("/api/auth/login")
+async def auth_login(req: LoginRequest):
+    """
+    Validates user credentials securely without revealing credentials in error messages.
+    """
+    user = USERS_DB.get(req.username)
+    if not user or user["password"] != req.password:
+        raise HTTPException(
+            status_code=401,
+            detail="Wrong credentials"
+        )
+
+    return {
+        "status": "authenticated",
+        "access_token": f"polygen-token-{uuid.uuid4()}",
+        "token_type": "bearer",
+        "user": {
+            "username": user["username"],
+            "display_name": user["display_name"],
+            "role": user["role"],
+            "email": user["email"],
+            "permissions": ["admin", "3d_export", "kinematics", "physical_studio", "digital_build"]
+        }
+    }
+
+@app.post("/api/auth/register")
+async def auth_register(req: RegisterRequest):
+    """
+    Registers a new user account into the system.
+    """
+    if req.username in USERS_DB and req.username != "admin":
+        raise HTTPException(status_code=400, detail="Username already exists")
+
+    USERS_DB[req.username] = {
+        "username": req.username,
+        "password": req.password,
+        "display_name": req.username.capitalize(),
+        "role": "StudioDeveloper",
+        "email": req.email
+    }
+
+    return {
+        "status": "registered",
+        "access_token": f"polygen-token-{uuid.uuid4()}",
+        "token_type": "bearer",
+        "user": {
+            "username": req.username,
+            "display_name": req.username.capitalize(),
+            "role": USERS_DB[req.username]["role"],
+            "email": req.email
+        }
+    }
+
+@app.get("/api/auth/me")
+async def auth_current_user():
+    """
+    Returns current authenticated admin profile.
+    """
+    admin = USERS_DB["admin"]
+    return {
+        "authenticated": True,
+        "username": admin["username"],
+        "display_name": admin["display_name"],
+        "role": admin["role"],
+        "email": admin["email"]
+    }
+
+
 class GenerationRequest(BaseModel):
     prompt: str = Field(..., json_schema_extra={"example": "A rusted medieval broadsword with a glowing blue sapphire in the hilt"})
     target_faces: int = Field(default=10000, description="Target polygon count after decimation")
@@ -361,4 +453,198 @@ async def generate_procedural_assembly(req: ProceduralSynthRequest):
         "geometry_type": req.geometry_type,
         "physical_specs": specs,
         "cost_analysis": cost
+    }
+
+
+# =====================================================================
+# Week 4: Game Engine Exporter, Multi-LOD & Studio Staging Endpoints
+# =====================================================================
+
+from app.pipeline.lod import LODGenerator
+from app.pipeline.collision_hull import CollisionHullGenerator
+from app.pipeline.pbr_presets import PBRMaterialPresetEngine
+from app.pipeline.hdri_staging import HDRIStagingEngine
+from app.pipeline.game_engine_exporter import UnrealEngineExporter, UnityPrefabExporter
+
+
+@app.get("/api/materials/presets")
+async def list_pbr_material_presets():
+    """
+    Returns physically calibrated PBR material presets (Cyberpunk, Rust, Sci-Fi Matte, Titanium, Obsidian, Gold).
+    """
+    return {
+        "presets": PBRMaterialPresetEngine.list_presets(),
+        "count": len(PBRMaterialPresetEngine.PRESETS)
+    }
+
+
+class ApplyMaterialRequest(BaseModel):
+    preset_id: str = Field(default="cyberpunk_neon", description="Material preset identifier")
+
+
+@app.post("/api/materials/apply/{model_id}")
+async def apply_pbr_material(model_id: str, req: ApplyMaterialRequest):
+    """
+    Bakes and applies the specified PBR material preset to the asset.
+    """
+    preset = PBRMaterialPresetEngine.get_preset(req.preset_id)
+    if not preset:
+        raise HTTPException(status_code=400, detail=f"Invalid preset ID '{req.preset_id}'")
+
+    model_dir = settings.OUTPUTS_DIR / model_id
+    if not model_dir.exists():
+        raise HTTPException(status_code=404, detail="Model output directory not found")
+
+    # Load existing albedo if available
+    from PIL import Image
+    base_albedo = None
+    albedo_path = model_dir / "albedo.png"
+    if albedo_path.exists():
+        try:
+            base_albedo = Image.open(albedo_path)
+        except Exception:
+            base_albedo = None
+
+    baked = PBRMaterialPresetEngine.bake_preset_maps(req.preset_id, resolution=512, base_albedo=base_albedo)
+    for map_name, img in baked.items():
+        img.save(model_dir / f"{map_name}.png")
+
+    return {
+        "model_id": model_id,
+        "applied_preset": req.preset_id,
+        "preset_name": preset.name,
+        "category": preset.category,
+        "maps_updated": list(baked.keys())
+    }
+
+
+@app.get("/api/hdri/presets")
+async def list_hdri_presets():
+    """
+    Returns photometric studio environment lighting configurations.
+    """
+    return {
+        "presets": HDRIStagingEngine.list_presets(),
+        "count": len(HDRIStagingEngine.PRESETS)
+    }
+
+
+@app.post("/api/lod/generate/{model_id}")
+async def generate_model_lods(model_id: str):
+    """
+    Generates discrete LOD0, LOD1, LOD2, and LOD3 meshes with Hausdorff distance error calculation.
+    """
+    model_dir = settings.OUTPUTS_DIR / model_id
+    obj_path = model_dir / f"{model_id}.obj"
+    glb_path = model_dir / f"{model_id}.glb"
+
+    import trimesh
+    mesh = None
+    if obj_path.exists():
+        mesh = trimesh.load(str(obj_path))
+    elif glb_path.exists():
+        mesh = trimesh.load(str(glb_path), force="mesh")
+
+    if mesh is None or not isinstance(mesh, trimesh.Trimesh):
+        # Generate representative mesh if none exists
+        mesh = geometry_engine.generate_mesh(f"asset {model_id}")
+
+    lod_gen = LODGenerator()
+    results = lod_gen.generate_lods(mesh)
+    exported_paths = lod_gen.export_lods(model_dir, model_id, results["lods"])
+
+    return {
+        "model_id": model_id,
+        "specifications": results["specifications"],
+        "summary": results["summary"],
+        "exported_files": exported_paths
+    }
+
+
+@app.post("/api/collision/generate/{model_id}")
+async def generate_model_collision(model_id: str):
+    """
+    Generates Convex Hull, OBB, AABB, and Capsule collision primitives.
+    """
+    model_dir = settings.OUTPUTS_DIR / model_id
+    obj_path = model_dir / f"{model_id}.obj"
+
+    import trimesh
+    mesh = None
+    if obj_path.exists():
+        mesh = trimesh.load(str(obj_path))
+
+    if mesh is None or not isinstance(mesh, trimesh.Trimesh):
+        mesh = geometry_engine.generate_mesh(f"asset {model_id}")
+
+    coll_gen = CollisionHullGenerator()
+    results = coll_gen.generate_all_colliders(mesh)
+    ucx_path = coll_gen.export_unreal_collision_file(model_dir, model_id, results["meshes"])
+
+    return {
+        "model_id": model_id,
+        "collision_manifest": results["manifest"],
+        "recommended_primary": results["recommended_primary"],
+        "unreal_collision_file": ucx_path
+    }
+
+
+class GameEngineExportRequest(BaseModel):
+    engine: str = Field(default="unreal", description="Target engine: 'unreal' (UE5) or 'unity'")
+    include_lods: bool = Field(default=True, description="Generate multi-LODs")
+    include_collision: bool = Field(default=True, description="Generate physics collision hulls")
+
+
+@app.post("/api/export/game-engine/{model_id}")
+async def export_for_game_engine(model_id: str, req: GameEngineExportRequest):
+    """
+    Produces complete, production-ready ZIP package for Unreal Engine 5 or Unity URP/HDRP.
+    """
+    model_dir = settings.OUTPUTS_DIR / model_id
+    obj_path = model_dir / f"{model_id}.obj"
+
+    import trimesh
+    from PIL import Image
+
+    mesh = None
+    if obj_path.exists():
+        mesh = trimesh.load(str(obj_path))
+    if mesh is None or not isinstance(mesh, trimesh.Trimesh):
+        mesh = geometry_engine.generate_mesh(f"asset {model_id}")
+
+    # Load existing PBR maps
+    pbr_maps = {}
+    for map_key in ["albedo", "normal", "roughness", "metalness"]:
+        mp = model_dir / f"{map_key}.png"
+        if mp.exists():
+            try:
+                pbr_maps[map_key] = Image.open(mp)
+            except Exception:
+                pass
+
+    if req.engine.lower() == "unity":
+        pkg = UnityPrefabExporter.create_package(
+            mesh=mesh,
+            asset_name=model_id,
+            output_dir=model_dir,
+            pbr_maps=pbr_maps if pbr_maps else None,
+            generate_lods=req.include_lods
+        )
+    else:
+        pkg = UnrealEngineExporter.create_package(
+            mesh=mesh,
+            asset_name=model_id,
+            output_dir=model_dir,
+            pbr_maps=pbr_maps if pbr_maps else None,
+            generate_lods=req.include_lods,
+            generate_collision=req.include_collision
+        )
+
+    return {
+        "model_id": model_id,
+        "engine": req.engine.lower(),
+        "package_filename": Path(pkg["package_path"]).name,
+        "download_url": f"/outputs/{model_id}/{Path(pkg['package_path']).name}",
+        "file_count": pkg["file_count"],
+        "manifest": pkg["manifest"]
     }
