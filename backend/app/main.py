@@ -648,3 +648,51 @@ async def export_for_game_engine(model_id: str, req: GameEngineExportRequest):
         "file_count": pkg["file_count"],
         "manifest": pkg["manifest"]
     }
+# Day 6 Enterprise 3D Pipeline Endpoints (Draco, Impostors, Physics, USDZ, Batch)
+# ============================================================================
+
+import os
+from typing import List, Optional, Dict, Any
+from app.pipeline.draco_compression import DracoGeometryCompressor
+from app.pipeline.impostor_baker import ImpostorBaker, ImpostorConfig
+from app.pipeline.advanced_pbr import ADVANCED_PBR_CATALOG
+from app.pipeline.physics_rigidbody import MeshPhysicsEvaluator
+from app.pipeline.usdz_exporter import USDZExporter
+
+class DracoCompressRequest(BaseModel):
+    position_bits: int = Field(default=14, ge=8, le=24)
+    normal_bits: int = Field(default=10, ge=6, le=16)
+
+@app.post("/api/models/{model_id}/compress/draco")
+async def compress_model_draco(model_id: str, req: DracoCompressRequest = DracoCompressRequest()):
+    mesh = geometry_engine.generate_mesh(f"asset {model_id}")
+    compressor = DracoGeometryCompressor(position_bits=req.position_bits, normal_bits=req.normal_bits)
+    verts = mesh.vertices.tolist()
+    faces = mesh.faces.tolist()
+    normals = mesh.vertex_normals.tolist() if hasattr(mesh, "vertex_normals") else None
+    result = compressor.compress(verts, faces, normals)
+    result["model_id"] = model_id
+    return result
+
+@app.post("/api/models/{model_id}/impostor")
+async def bake_model_impostor(model_id: str):
+    mesh = geometry_engine.generate_mesh(f"asset {model_id}")
+    baker = ImpostorBaker(ImpostorConfig(atlas_resolution=512, subdivisions=4))
+    result = baker.bake_impostor_descriptor(model_id, mesh.vertices.tolist(), mesh.faces.tolist())
+    return result
+
+@app.get("/api/models/{model_id}/export/usdz")
+async def export_model_usdz(model_id: str):
+    model_dir = settings.OUTPUTS_DIR / model_id
+    os.makedirs(model_dir, exist_ok=True)
+    usdz_path = model_dir / f"{model_id}.usdz"
+    mesh = geometry_engine.generate_mesh(f"asset {model_id}")
+    pkg = USDZExporter.create_usdz_package(
+        str(usdz_path),
+        model_id,
+        mesh.vertices.tolist(),
+        mesh.faces.tolist(),
+        mesh.vertex_normals.tolist() if hasattr(mesh, "vertex_normals") else None,
+    )
+    pkg["download_url"] = f"/outputs/{model_id}/{model_id}.usdz"
+    return pkg
