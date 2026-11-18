@@ -84,3 +84,54 @@ class DracoStreamEncoder:
         for d in deltas:
             out.extend(cls.pack_varint(d))
         return bytes(out)
+
+class DracoGeometryCompressor:
+    """Full 3D geometry compression engine integrating attribute quantization and bit-packing."""
+    def __init__(self, position_bits: int = 14, normal_bits: int = 10, uv_bits: int = 12):
+        self.quantizer = DracoMeshQuantizer(position_bits, normal_bits, uv_bits)
+        self.stream_encoder = DracoStreamEncoder()
+
+    def compress(self, vertices: List[List[float]], faces: List[List[int]], normals: List[List[float]] = None) -> Dict[str, Any]:
+        quantized_pos, pos_meta = self.quantizer.quantize_positions(vertices)
+        flat_pos = []
+        for x, y, z in quantized_pos:
+            flat_pos.extend([x, y, z])
+        pos_bytes = self.stream_encoder.compress_stream(flat_pos)
+
+        flat_faces = []
+        for f in faces:
+            flat_faces.extend(f)
+        face_bytes = self.stream_encoder.compress_stream(flat_faces)
+
+        normal_bytes = b""
+        norm_meta = None
+        if normals and len(normals) == len(vertices):
+            quantized_norm, norm_meta = self.quantizer.quantize_normals(normals)
+            flat_norm = []
+            for u, v in quantized_norm:
+                flat_norm.extend([u, v])
+            normal_bytes = self.stream_encoder.compress_stream(flat_norm)
+
+        raw_pos_bytes = len(vertices) * 3 * 4
+        raw_face_bytes = len(faces) * 3 * 4
+        raw_norm_bytes = len(normals) * 3 * 4 if normals else 0
+        raw_total = raw_pos_bytes + raw_face_bytes + raw_norm_bytes
+
+        compressed_total = len(pos_bytes) + len(face_bytes) + len(normal_bytes)
+        ratio = compressed_total / max(raw_total, 1)
+
+        return {
+            "compressed_size_bytes": compressed_total,
+            "raw_size_bytes": raw_total,
+            "compression_ratio": round(ratio, 4),
+            "space_saving_pct": round((1.0 - ratio) * 100, 2),
+            "vertex_count": len(vertices),
+            "face_count": len(faces),
+            "position_metadata": pos_meta,
+            "normal_metadata": norm_meta,
+            "payload_chunks": {
+                "positions_len": len(pos_bytes),
+                "faces_len": len(face_bytes),
+                "normals_len": len(normal_bytes)
+            }
+        }
