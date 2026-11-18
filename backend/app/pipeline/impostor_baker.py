@@ -77,3 +77,27 @@ class ImpostorBaker:
             "bounding_sphere_radius": round(radius, 4),
             "bounding_center": [round(c, 4) for c in center]
         }
+
+    def bake_impostor_descriptor(self, model_id: str, vertices: List[List[float]], faces: List[List[int]]) -> Dict[str, Any]:
+        xs = [v[0] for v in vertices]
+        ys = [v[1] for v in vertices]
+        zs = [v[2] for v in vertices]
+        b_min = [min(xs), min(ys), min(zs)]
+        b_max = [max(xs), max(ys), max(zs)]
+        camera_grid = self.generate_camera_grid()
+        quad = self.construct_billboard_quad(b_min, b_max)
+        return {
+            "model_id": model_id,
+            "lod_level": "LOD4_Impostor",
+            "atlas_resolution": self.config.atlas_resolution,
+            "tile_grid": f"{self.config.subdivisions}x{self.config.subdivisions}",
+            "tile_count": len(camera_grid),
+            "camera_angles": camera_grid,
+            "billboard_geometry": quad,
+            "alpha_cutoff": self.config.alpha_cutoff,
+            "features": {
+                "depth_encoding": self.config.include_depth,
+                "normal_reconstruction": self.config.include_normals,
+                "octahedral_hemisphere": True
+            }
+        }
