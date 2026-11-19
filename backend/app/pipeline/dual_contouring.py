@@ -64,3 +64,25 @@ class DualContouringMesher:
         if n > 1e-8:
             g /= n
         return [float(g[0]), float(g[1]), float(g[2])]
+
+    def validate_mesh_manifold(self, vertex_count: int, faces: List[List[int]]) -> Dict[str, Any]:
+        """Check for non-manifold edges, shared vertices, and Euler-Poincare characteristic."""
+        edge_counts = {}
+        for f in faces:
+            edges = [
+                tuple(sorted([f[0], f[1]])),
+                tuple(sorted([f[1], f[2]])),
+                tuple(sorted([f[2], f[0]]))
+            ]
+            for e in edges:
+                edge_counts[e] = edge_counts.get(e, 0) + 1
+
+        non_manifold_edges = sum(1 for cnt in edge_counts.values() if cnt > 2)
+        open_boundary_edges = sum(1 for cnt in edge_counts.values() if cnt == 1)
+        
+        return {
+            "is_watertight": open_boundary_edges == 0,
+            "non_manifold_edges": non_manifold_edges,
+            "open_boundary_edges": open_boundary_edges,
+            "euler_characteristic": vertex_count - len(edge_counts) + len(faces)
+        }
