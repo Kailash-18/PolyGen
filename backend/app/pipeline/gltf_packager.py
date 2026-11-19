@@ -206,3 +206,14 @@ class GLTFPackager:
             "total_bytes": length,
             "json_chunk_bytes": json_len
         }
+
+    def inject_draco_extension_declaration(self) -> None:
+        """Declare KHR_draco_mesh_compression in glTF root extensionsUsed array."""
+        if "extensionsUsed" not in self.gltf_manifest:
+            self.gltf_manifest["extensionsUsed"] = []
+        if "KHR_draco_mesh_compression" not in self.gltf_manifest["extensionsUsed"]:
+            self.gltf_manifest["extensionsUsed"].append("KHR_draco_mesh_compression")
+        if "extensionsRequired" not in self.gltf_manifest:
+            self.gltf_manifest["extensionsRequired"] = []
+        if "KHR_draco_mesh_compression" not in self.gltf_manifest["extensionsRequired"]:
+            self.gltf_manifest["extensionsRequired"].append("KHR_draco_mesh_compression")
