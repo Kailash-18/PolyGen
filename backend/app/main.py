@@ -779,3 +779,27 @@ def api_dual_contour_mesh(payload: Dict[str, Any]):
     sampler = NeuralLatentSampler()
     result = mesher.generate_mesh(sampler.evaluate_density)
     return {"status": "success", "mesh": result}
+
+from app.pipeline.asset_manifest import AssetMetadataManifest
+from app.pipeline.async_worker_pool import NeuralWorkerPool
+
+global_worker_pool = NeuralWorkerPool(max_workers=4)
+
+@app.post("/api/v1/assets/manifest")
+def api_generate_asset_manifest(payload: Dict[str, Any]):
+    """Create standardized 3D asset metadata manifest."""
+    asset_id = payload.get("asset_id", "asset_demo_01")
+    name = payload.get("name", "Procedural Asset")
+    poly_count = int(payload.get("poly_count", 5000))
+    vertex_count = int(payload.get("vertex_count", 2500))
+    manifest = AssetMetadataManifest(asset_id, name, poly_count, vertex_count)
+    return {"status": "success", "manifest": manifest.to_dict()}
+
+@app.post("/api/v1/queue/submit")
+def api_submit_generation_job(payload: Dict[str, Any]):
+    """Submit prompt to asynchronous GPU neural generation queue."""
+    prompt = payload.get("prompt", "futuristic cyberpunk drone")
+    priority = int(payload.get("priority", 1))
+    job_id = f"job_{int(time.time()*1000)}"
+    job = global_worker_pool.submit_job(job_id, prompt, priority)
+    return {"status": "queued", "job_id": job.job_id, "priority": job.priority}
