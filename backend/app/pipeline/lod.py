@@ -169,3 +169,25 @@ class LODGenerator:
             paths[lod_name] = str(file_path)
 
         return paths
+
+
+class ContinuousLODMorpher:
+    """Computes geomorph vertex displacement vectors between discrete LOD hierarchies."""
+    def __init__(self, base_vertices: List[List[float]], target_vertices: List[List[float]]):
+        self.base_vertices = base_vertices
+        self.target_vertices = target_vertices
+
+    def interpolate_positions(self, t: float) -> List[List[float]]:
+        """Compute morphed positions at continuous transition parameter t in [0.0, 1.0]."""
+        t = float(np.clip(t, 0.0, 1.0))
+        morphed = []
+        n = min(len(self.base_vertices), len(self.target_vertices))
+        for i in range(n):
+            v0 = self.base_vertices[i]
+            v1 = self.target_vertices[i]
+            morphed.append([
+                float((1.0 - t) * v0[0] + t * v1[0]),
+                float((1.0 - t) * v0[1] + t * v1[1]),
+                float((1.0 - t) * v0[2] + t * v1[2])
+            ])
+        return morphed
