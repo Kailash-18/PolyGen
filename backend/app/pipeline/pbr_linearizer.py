@@ -39,3 +39,12 @@ class PBRColorSpaceLinearizer:
         t = t / np.linalg.norm(t)
         bitangent = np.cross(n, t)
         return t, bitangent
+
+    def compute_ambient_occlusion_sample(self, normal: np.ndarray, num_samples: int = 16) -> float:
+        """Estimate ambient occlusion coefficient using cosine-weighted hemisphere integration."""
+        n = normal / np.linalg.norm(normal)
+        occlusion = 0.0
+        for i in range(num_samples):
+            angle = (i + 0.5) * (np.pi / (2.0 * num_samples))
+            occlusion += np.cos(angle) * (1.0 / num_samples)
+        return float(np.clip(1.0 - occlusion * 0.3, 0.0, 1.0))
