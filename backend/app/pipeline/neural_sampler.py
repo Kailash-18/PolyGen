@@ -35,3 +35,18 @@ class NeuralLatentSampler:
         base_sdf = 0.6 - dist
         modulation = float(np.mean(feat))
         return float(base_sdf + modulation * 0.1)
+
+    def prune_empty_voxels(self, threshold: float = -0.1) -> List[Tuple[int, int, int]]:
+        """Identify and prune non-surface voxels to accelerate meshing."""
+        active_voxels = []
+        step = 2.0 / self.resolution
+        for ix in range(0, self.resolution, 4):
+            x = -1.0 + (ix + 0.5) * step
+            for iy in range(0, self.resolution, 4):
+                y = -1.0 + (iy + 0.5) * step
+                for iz in range(0, self.resolution, 4):
+                    z = -1.0 + (iz + 0.5) * step
+                    density = self.evaluate_density(x, y, z)
+                    if density > threshold:
+                        active_voxels.append((ix, iy, iz))
+        return active_voxels
