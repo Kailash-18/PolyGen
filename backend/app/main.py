@@ -745,3 +745,37 @@ async def get_batch_job_status(job_id: str):
         "asset_count": len(job.asset_ids),
         "results": job.results,
     }
+
+
+# ==================== WEEK 1 NEURAL 3D EXTENSION ENDPOINTS ====================
+import numpy as np
+import time
+from app.pipeline.neural_sampler import NeuralLatentSampler
+from app.pipeline.dual_contouring import DualContouringMesher
+from app.pipeline.pbr_linearizer import PBRColorSpaceLinearizer
+
+@app.post("/api/v1/neural/sample")
+def api_sample_neural_latent(payload: Dict[str, Any]):
+    """Sample continuous coordinate features from TripoSR triplane latent grid."""
+    x = float(payload.get("x", 0.0))
+    y = float(payload.get("y", 0.0))
+    z = float(payload.get("z", 0.0))
+    sampler = NeuralLatentSampler()
+    feat = sampler.sample_point(x, y, z)
+    density = sampler.evaluate_density(x, y, z)
+    return {
+        "status": "success",
+        "coordinates": [x, y, z],
+        "density": density,
+        "feature_dim": len(feat),
+        "feature_mean": float(np.mean(feat))
+    }
+
+@app.post("/api/v1/geometry/dual-contour")
+def api_dual_contour_mesh(payload: Dict[str, Any]):
+    """Extract sharp-feature mesh using Dual Contouring."""
+    grid_size = int(payload.get("grid_size", 16))
+    mesher = DualContouringMesher(grid_size=grid_size)
+    sampler = NeuralLatentSampler()
+    result = mesher.generate_mesh(sampler.evaluate_density)
+    return {"status": "success", "mesh": result}
