@@ -30,3 +30,12 @@ class PBRColorSpaceLinearizer:
         mask = norm <= 0.04045
         linear = np.where(mask, norm / 12.92, ((norm + 0.055) / 1.055) ** 2.4)
         return (linear * 255.0).astype(np.uint8)
+
+    @staticmethod
+    def orthogonalize_tangent_space(normal: np.ndarray, tangent: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """Apply Gram-Schmidt orthogonalization to construct an orthonormal TBN frame."""
+        n = normal / np.linalg.norm(normal)
+        t = tangent - np.dot(tangent, n) * n
+        t = t / np.linalg.norm(t)
+        bitangent = np.cross(n, t)
+        return t, bitangent
