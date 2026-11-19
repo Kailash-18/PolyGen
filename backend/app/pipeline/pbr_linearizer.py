@@ -48,3 +48,11 @@ class PBRColorSpaceLinearizer:
             angle = (i + 0.5) * (np.pi / (2.0 * num_samples))
             occlusion += np.cos(angle) * (1.0 / num_samples)
         return float(np.clip(1.0 - occlusion * 0.3, 0.0, 1.0))
+
+    @staticmethod
+    def evaluate_ggx_distribution(n_dot_h: float, roughness: float) -> float:
+        """Trowbridge-Reitz GGX microfacet specular distribution function."""
+        alpha = roughness * roughness
+        alpha2 = alpha * alpha
+        denom = (n_dot_h * n_dot_h * (alpha2 - 1.0) + 1.0)
+        return float(alpha2 / (np.pi * denom * denom + 1e-7))
