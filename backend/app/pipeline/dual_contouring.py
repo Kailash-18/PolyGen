@@ -53,3 +53,14 @@ class DualContouringMesher:
             "faces": faces[:100],
             "manifold": len(vertices) > 0 and len(faces) > 0
         }
+
+    def compute_gradient_normal(self, sdf_func, x: float, y: float, z: float, eps: float = 1e-4) -> List[float]:
+        """Compute surface normal via central difference SDF gradient."""
+        dx = sdf_func(x + eps, y, z) - sdf_func(x - eps, y, z)
+        dy = sdf_func(x, y + eps, z) - sdf_func(x, y - eps, z)
+        dz = sdf_func(x, y, z + eps) - sdf_func(x, y, z - eps)
+        g = np.array([dx, dy, dz], dtype=np.float32)
+        n = np.linalg.norm(g)
+        if n > 1e-8:
+            g /= n
+        return [float(g[0]), float(g[1]), float(g[2])]
