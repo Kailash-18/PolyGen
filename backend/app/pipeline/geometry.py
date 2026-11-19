@@ -1,3 +1,4 @@
+from typing import List, Tuple, Dict, Any
 """
 Stage 1: Geometry Generation Engine (TripoSR / Shap-E / Mesh Synthesis)
 """
@@ -100,3 +101,20 @@ class GeometryEngine:
         if max_extent > 0:
             mesh.apply_scale(2.0 / max_extent)
         return mesh
+
+
+def stitch_mesh_seams(vertices: List[List[float]], tolerance: float = 1e-3) -> Tuple[List[List[float]], int]:
+    """Weld coincident vertices along mesh seams to ensure topological watertightness."""
+    welded = []
+    stitched_count = 0
+    for v in vertices:
+        found = False
+        for w in welded:
+            dist = np.sqrt((v[0] - w[0])**2 + (v[1] - w[1])**2 + (v[2] - w[2])**2)
+            if dist <= tolerance:
+                found = True
+                stitched_count += 1
+                break
+        if not found:
+            welded.append(v)
+    return welded, stitched_count
