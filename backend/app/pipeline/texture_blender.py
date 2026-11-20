@@ -25,3 +25,19 @@ class MultiViewTextureBlender:
             accum += c.astype(np.float32) * w
         blended = np.clip(accum / total_w, 0, 255)
         return blended.astype(np.uint8)
+
+    def normalize_cross_view_exposure(self, view_images: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+        """Normalizes global luminance across camera viewpoints to eliminate exposure seams."""
+        if not view_images:
+            return view_images
+
+        mean_luminances = [float(np.mean(img)) for img in view_images.values()]
+        target_luminance = float(np.mean(mean_luminances))
+
+        normalized = {}
+        for view_name, img in view_images.items():
+            current_lum = max(1e-3, float(np.mean(img)))
+            ratio = target_luminance / current_lum
+            adj = np.clip(img.astype(np.float32) * ratio, 0, 255)
+            normalized[view_name] = adj.astype(np.uint8)
+        return normalized
