@@ -26,3 +26,19 @@ class MultiViewProjector:
         dot = float(np.dot(norm_n, norm_c))
         # Clamp grazing angles to prevent projection stretching
         return max(0.0, dot) if dot > 0.1 else 0.0
+
+    def filter_occluded_vertices(self, vertices: np.ndarray, depth_buffer: np.ndarray, view_matrix: np.ndarray, tolerance: float = 0.05) -> np.ndarray:
+        """Generates boolean visibility mask using Z-buffer depth disparity."""
+        vis_mask = np.ones(len(vertices), dtype=bool)
+        h, w = depth_buffer.shape
+        for i, v in enumerate(vertices):
+            u, v_coord, z = self.project_point_to_camera(v, view_matrix)
+            if 0.0 <= u <= 1.0 and 0.0 <= v_coord <= 1.0:
+                px = min(w - 1, max(0, int(u * (w - 1))))
+                py = min(h - 1, max(0, int(v_coord * (h - 1))))
+                buffer_z = depth_buffer[py, px]
+                if abs(z - buffer_z) > tolerance and buffer_z < z:
+                    vis_mask[i] = False
+            else:
+                vis_mask[i] = False
+        return vis_mask
