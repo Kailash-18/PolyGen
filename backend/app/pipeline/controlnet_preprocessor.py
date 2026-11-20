@@ -25,3 +25,19 @@ class ControlNetDepthPreprocessor:
             "foreground_ratio": float(np.count_nonzero(depth_uint8 > 5) / depth_uint8.size),
             "resolution": depth_uint8.shape
         }
+
+    def build_conditioning_payload(self, prompt: str, depth_uint8: np.ndarray, negative_prompt: str = "") -> Dict[str, Any]:
+        """Generates structured ControlNet payload with positive/negative prompt embeddings."""
+        cleaned_prompt = prompt.strip()
+        default_negative = "seams, blur, distortion, lowres, oversaturated, chromatic aberration"
+        neg = f"{negative_prompt}, {default_negative}" if negative_prompt else default_negative
+        
+        return {
+            "prompt": cleaned_prompt,
+            "negative_prompt": neg,
+            "controlnet_conditioning_scale": 0.85,
+            "depth_shape": list(depth_uint8.shape),
+            "guidance_scale": 7.5,
+            "num_inference_steps": 30,
+            "is_valid": len(cleaned_prompt) > 0
+        }
