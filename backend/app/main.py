@@ -825,3 +825,19 @@ def api_generate_depth_maps(payload: Dict[str, Any]):
         "views": list(depth_maps.keys()),
         "depth_statistics": stats
     }
+
+@app.post("/api/v1/texture/synthesize-controlnet")
+def api_synthesize_controlnet_texture(payload: Dict[str, Any]):
+    """Run full ControlNet depth-conditioned texture synthesis for prompt."""
+    prompt = payload.get("prompt", "rusted medieval steel sword with blue sapphire")
+    model_id = payload.get("model_id", "sword_01")
+    mesh = geometry_engine.generate_mesh(prompt)
+    result = controlnet_orchestrator.generate_textured_model(mesh.vertices.tolist(), mesh.faces.tolist(), prompt)
+    telemetry = controlnet_orchestrator.get_stage_telemetry()
+    return {
+        "status": "success",
+        "model_id": model_id,
+        "prompt": prompt,
+        "pipeline_result": result,
+        "telemetry": telemetry
+    }
