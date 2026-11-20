@@ -803,3 +803,25 @@ def api_submit_generation_job(payload: Dict[str, Any]):
     job_id = f"job_{int(time.time()*1000)}"
     job = global_worker_pool.submit_job(job_id, prompt, priority)
     return {"status": "queued", "job_id": job.job_id, "priority": job.priority}
+
+
+# ==================== WEEK 2 CONTROLNET TEXTURE SYNTHESIS ====================
+from app.pipeline.depth_renderer import CanonicalDepthRenderer
+from app.pipeline.controlnet_orchestrator import ControlNetTextureOrchestrator
+
+controlnet_orchestrator = ControlNetTextureOrchestrator(resolution=512)
+
+@app.post("/api/v1/texture/depth-maps")
+def api_generate_depth_maps(payload: Dict[str, Any]):
+    """Rasterize 6 canonical view depth buffers from 3D geometry."""
+    model_id = payload.get("model_id", "default")
+    mesh = geometry_engine.generate_mesh(f"asset {model_id}")
+    renderer = CanonicalDepthRenderer(resolution=int(payload.get("resolution", 256)))
+    depth_maps = renderer.render_all_canonical_views(mesh.vertices.tolist(), mesh.faces.tolist())
+    stats = {view: {"min_depth": float(np.min(dm)), "max_depth": float(np.max(dm))} for view, dm in depth_maps.items()}
+    return {
+        "status": "success",
+        "model_id": model_id,
+        "views": list(depth_maps.keys()),
+        "depth_statistics": stats
+    }
