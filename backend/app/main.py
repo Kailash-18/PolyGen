@@ -841,3 +841,32 @@ def api_synthesize_controlnet_texture(payload: Dict[str, Any]):
         "pipeline_result": result,
         "telemetry": telemetry
     }
+
+
+# ==================== WEEK 2 UV UNWRAPPING & GEOMETRY AUDIT ====================
+from app.pipeline.uv_unwrapper import MeshUVUnwrapper
+from app.pipeline.atlas_packer import AtlasBinPacker
+from app.pipeline.pbr_baker import PBRAtlasBaker
+from app.pipeline.geometry_audit import MidProjectGeometryAuditor
+from app.pipeline.rendering_validator import RenderingValidator
+
+uv_unwrapper = MeshUVUnwrapper()
+atlas_packer = AtlasBinPacker(atlas_size=1024)
+pbr_baker = PBRAtlasBaker(atlas_resolution=1024)
+geometry_auditor = MidProjectGeometryAuditor()
+rendering_validator = RenderingValidator()
+
+@app.post("/api/v1/texture/uv-unwrap")
+def api_uv_unwrap_mesh(payload: Dict[str, Any]):
+    """Automatically unwrap 3D mesh into 2D UV texture atlas layout."""
+    model_id = payload.get("model_id", "default_model")
+    mesh = geometry_engine.generate_mesh(f"asset {model_id}")
+    uvs = uv_unwrapper.unwrap_mesh(mesh.vertices.tolist(), mesh.faces.tolist())
+    distortion = uv_unwrapper.evaluate_uv_distortion(mesh.vertices, mesh.faces, uvs)
+    return {
+        "status": "success",
+        "model_id": model_id,
+        "vertex_count": len(mesh.vertices),
+        "uv_count": len(uvs),
+        "distortion_metrics": distortion
+    }
