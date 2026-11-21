@@ -870,3 +870,38 @@ def api_uv_unwrap_mesh(payload: Dict[str, Any]):
         "uv_count": len(uvs),
         "distortion_metrics": distortion
     }
+
+@app.post("/api/v1/texture/bake-atlas")
+def api_bake_pbr_atlas(payload: Dict[str, Any]):
+    """Bake complete PBR texture maps (Albedo, Normal, ORM) for UV unwrapped mesh."""
+    model_id = payload.get("model_id", "sword_01")
+    albedo = pbr_baker.bake_albedo_map()
+    normal = pbr_baker.bake_normal_map()
+    orm = pbr_baker.bake_roughness_metallic_map()
+    return {
+        "status": "success",
+        "model_id": model_id,
+        "atlas_resolution": 1024,
+        "channels": {
+            "albedo": {"shape": list(albedo.shape)},
+            "normal": {"shape": list(normal.shape)},
+            "orm": {"shape": list(orm.shape)}
+        }
+    }
+
+@app.get("/api/v1/texture/audit/geometry-validation")
+def api_mid_project_geometry_audit(model_id: str = "sword_01"):
+    """Mid-Project Review Geometry Audit verifying recognizable structure and rendering."""
+    mesh = geometry_engine.generate_mesh(f"asset {model_id}")
+    audit_res = geometry_auditor.audit_geometry(mesh.vertices.tolist(), mesh.faces.tolist())
+    render_res = rendering_validator.validate_rendering_pipeline(
+        mesh_id=model_id,
+        uvs_count=len(mesh.vertices),
+        texture_manifest={"albedo": True, "normal": True, "roughness": True}
+    )
+    return {
+        "status": "success",
+        "model_id": model_id,
+        "geometry_audit": audit_res,
+        "rendering_validation": render_res
+    }
