@@ -37,3 +37,13 @@ class MidProjectGeometryAuditor:
             "non_blob_fidelity": is_recognizable,
             "watertight": True
         }
+
+    def evaluate_euler_characteristic(self, v_count: int, e_count: int, f_count: int) -> Dict[str, Any]:
+        """Evaluates topological Euler characteristic: chi = V - E + F (chi=2 for genus-0 sphere)."""
+        chi = v_count - e_count + f_count
+        genus = (2 - chi) // 2
+        return {
+            "euler_characteristic": chi,
+            "genus": max(0, genus),
+            "is_closed_manifold": (chi == 2)
+        }
