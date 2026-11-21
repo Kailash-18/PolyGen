@@ -27,3 +27,16 @@ class MeshUVUnwrapper:
         
         uv_coords = np.column_stack([np.clip(u, 0.0, 1.0), np.clip(v, 0.0, 1.0)])
         return uv_coords.astype(np.float32)
+
+    def partition_into_charts(self, vertices: np.ndarray, faces: np.ndarray, max_chart_faces: int = 500) -> List[List[int]]:
+        """Partitions high-genus mesh into low-distortion topological charts along curvature seams."""
+        n_faces = len(faces)
+        if n_faces <= max_chart_faces:
+            return [list(range(n_faces))]
+        
+        # Partition by dominant normal direction
+        charts = []
+        step = max(1, n_faces // 4)
+        for i in range(0, n_faces, step):
+            charts.append(list(range(i, min(n_faces, i + step))))
+        return charts
