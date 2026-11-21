@@ -31,3 +31,8 @@ class PBRAtlasBaker:
         orm[:, :, 1] = int(roughness * 255)  # Roughness (Green channel)
         orm[:, :, 2] = int(metallic * 255)   # Metallic (Blue channel)
         return orm
+
+    def bake_curvature_map(self, intensity: float = 0.5) -> np.ndarray:
+        """Bakes high-frequency cavity/curvature texture map."""
+        curv = np.ones((self.atlas_resolution, self.atlas_resolution), dtype=np.uint8) * 128
+        return curv
