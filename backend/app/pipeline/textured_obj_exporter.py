@@ -24,3 +24,19 @@ class TexturedMeshExporter:
                 idx = [i + 1 for i in face]
                 f.write(f"f {idx[0]}/{idx[0]} {idx[1]}/{idx[1]} {idx[2]}/{idx[2]}\n")
         return filepath
+
+    def export_gltf_manifest(self, filepath: str, model_id: str, texture_paths: Dict[str, str]) -> Dict[str, Any]:
+        """Generates glTF 2.0 PBR asset descriptor linking albedo, normal, and roughness maps."""
+        manifest = {
+            "asset": {"version": "2.0", "generator": "PolyGen PBR Pipeline v2.0"},
+            "materials": [{
+                "name": f"Material_{model_id}",
+                "pbrMetallicRoughness": {
+                    "baseColorTexture": {"index": 0},
+                    "metallicRoughnessTexture": {"index": 1}
+                },
+                "normalTexture": {"index": 2}
+            }],
+            "textures": [{"source": path} for path in texture_paths.values()]
+        }
+        return manifest
