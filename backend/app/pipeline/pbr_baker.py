@@ -2,7 +2,7 @@
 Unified PBR Texture Atlas Baker.
 Bakes Diffuse/Albedo, Tangent-Space Normal, Roughness, and Metallic maps.
 """
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple
 import numpy as np
 
 class PBRAtlasBaker:
