@@ -36,3 +36,10 @@ class AtlasBinPacker:
 
         packing_efficiency = float(n_charts * (cell_size ** 2))
         return packed, packing_efficiency
+
+    def apply_gutter_margin(self, uvs: np.ndarray, margin: float = 0.01) -> np.ndarray:
+        """Scales UV coordinates inward to guarantee safe boundary margins."""
+        res = uvs.copy()
+        res[:, 0] = margin + res[:, 0] * (1.0 - 2.0 * margin)
+        res[:, 1] = margin + res[:, 1] * (1.0 - 2.0 * margin)
+        return np.clip(res, 0.0, 1.0)
