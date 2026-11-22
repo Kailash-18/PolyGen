@@ -905,3 +905,22 @@ def api_mid_project_geometry_audit(model_id: str = "sword_01"):
         "geometry_audit": audit_res,
         "rendering_validation": render_res
     }
+
+
+from app.pipeline.qem_decimator import QEMDecimator
+qem_decimator = QEMDecimator(target_faces=10000)
+
+@app.post("/api/v1/optimize/decimate-qem")
+def api_decimate_mesh_qem(payload: Dict[str, Any]):
+    """Decimates 3D mesh using Quadric Error Metrics QEM down to game-ready polygon budget."""
+    model_id = payload.get("model_id", "sword_01")
+    target_faces = payload.get("target_faces", 10000)
+    mesh = geometry_engine.generate_mesh(f"asset {model_id}")
+    dec_verts, dec_faces, metrics = qem_decimator.decimate_mesh(mesh.vertices, mesh.faces, target_faces=target_faces)
+    return {
+        "status": "success",
+        "model_id": model_id,
+        "metrics": metrics,
+        "vertex_count": len(dec_verts),
+        "face_count": len(dec_faces)
+    }
