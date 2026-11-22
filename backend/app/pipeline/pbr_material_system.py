@@ -87,3 +87,42 @@ class PBRMaterialSystem:
         orm[:, :, 1] = roughness_map if roughness_map is not None else 128
         orm[:, :, 2] = metallic_map if metallic_map is not None else 0
         return orm
+
+    def compile_threejs_material(
+        self,
+        preset_name: str = "default",
+        has_orm_map: bool = True,
+        has_normal_map: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Compiles Three.js MeshPhysicalMaterial specification compatible with WebGL viewer.
+        """
+        profile = self.get_profile(preset_name)
+        color_hex = "#%02x%02x%02x" % (
+            int(profile.base_color[0] * 255),
+            int(profile.base_color[1] * 255),
+            int(profile.base_color[2] * 255)
+        )
+
+        threejs_config = {
+            "type": "MeshPhysicalMaterial",
+            "name": profile.name,
+            "color": color_hex,
+            "roughness": profile.roughness,
+            "metalness": profile.metallic,
+            "clearcoat": profile.clearcoat,
+            "ior": profile.ior,
+            "envMapIntensity": 1.0,
+            "normalScale": [profile.normal_scale, profile.normal_scale],
+            "textures": {}
+        }
+
+        if has_orm_map:
+            threejs_config["textures"]["aoMap"] = {"channel": "r", "intensity": 1.0}
+            threejs_config["textures"]["roughnessMap"] = {"channel": "g"}
+            threejs_config["textures"]["metalnessMap"] = {"channel": "b"}
+
+        if has_normal_map:
+            threejs_config["textures"]["normalMap"] = {"space": "tangent"}
+
+        return threejs_config
