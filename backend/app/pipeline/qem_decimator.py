@@ -4,6 +4,7 @@ Simplifies dense AI-generated 3D meshes (500k -> 10k polygons) with boundary pre
 """
 
 from typing import List, Tuple, Dict, Any, Optional
+import heapq
 import numpy as np
 import trimesh
 
@@ -68,7 +69,6 @@ class QEMDecimator:
             else:
                 raise np.linalg.LinAlgError("Ill-conditioned quadric matrix")
         except (np.linalg.LinAlgError, ValueError):
-            # Fallback to midpoint or endpoints minimizing cost
             mid = (v1_pos + v2_pos) * 0.5
             candidates = [v1_pos, v2_pos, mid]
             best_cand = mid
@@ -84,3 +84,28 @@ class QEMDecimator:
         v_hom = np.array([v_bar[0], v_bar[1], v_bar[2], 1.0], dtype=np.float64)
         cost = float(v_hom.T @ Q @ v_hom)
         return v_bar, max(0.0, cost)
+
+    def build_edge_priority_queue(
+        self,
+        vertices: np.ndarray,
+        faces: np.ndarray,
+        quadrics: List[np.ndarray]
+    ) -> List[Tuple[float, int, int, np.ndarray]]:
+        """
+        Extracts unique manifold edges and constructs min-heap priority queue
+        sorted by edge collapse quadric cost.
+        """
+        edges_set = set()
+        for f in faces:
+            for i in range(3):
+                u, v = int(f[i]), int(f[(i + 1) % 3])
+                edge = (min(u, v), max(u, v))
+                edges_set.add(edge)
+
+        pq = []
+        for u, v in edges_set:
+            v_opt, cost = self.evaluate_edge_collapse(
+                vertices[u], vertices[v], quadrics[u], quadrics[v]
+            )
+            heapq.heappush(pq, (cost, u, v, v_opt))
+        return pq
