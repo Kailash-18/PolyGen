@@ -924,3 +924,23 @@ def api_decimate_mesh_qem(payload: Dict[str, Any]):
         "vertex_count": len(dec_verts),
         "face_count": len(dec_faces)
     }
+
+from app.pipeline.pbr_material_system import PBRMaterialSystem
+pbr_material_system = PBRMaterialSystem()
+
+@app.post("/api/v1/materials/pbr-compile")
+def api_compile_pbr_material(payload: Dict[str, Any]):
+    """Compiles Three.js WebGL MeshPhysicalMaterial specification for PBR shader."""
+    preset_name = payload.get("preset_name", "medieval_rusted_iron")
+    has_orm = payload.get("has_orm", True)
+    has_normal = payload.get("has_normal", True)
+    material_spec = pbr_material_system.compile_threejs_material(
+        preset_name=preset_name,
+        has_orm_map=has_orm,
+        has_normal_map=has_normal
+    )
+    return {
+        "status": "success",
+        "preset_name": preset_name,
+        "material": material_spec
+    }
