@@ -82,10 +82,7 @@ class QEMDecimator:
         incident_faces: List[Tuple[int, int, int]],
         vertices: np.ndarray
     ) -> bool:
-        """
-        Validates that collapsing a vertex does not invert (flip) incident triangle normals.
-        Returns True if safe (no flip), False if normal would invert.
-        """
+        """Validates that collapsing a vertex does not invert incident normals."""
         for f in incident_faces:
             pts = [vertices[f[0]], vertices[f[1]], vertices[f[2]]]
             orig_norm = np.cross(pts[1] - pts[0], pts[2] - pts[0])
@@ -94,7 +91,6 @@ class QEMDecimator:
                 continue
             orig_n = orig_norm / orig_len
 
-            # New triangle points with v_idx substituted
             new_pts = [target_pos if idx == v_idx else vertices[idx] for idx in f]
             new_norm = np.cross(new_pts[1] - new_pts[0], new_pts[2] - new_pts[0])
             new_len = np.linalg.norm(new_norm)
@@ -103,7 +99,7 @@ class QEMDecimator:
             new_n = new_norm / new_len
 
             if float(np.dot(orig_n, new_n)) < self.min_normal_cos:
-                return False  # Normal inverted / flipped
+                return False
         return True
 
     def evaluate_edge_collapse(
@@ -143,3 +139,57 @@ class QEMDecimator:
         v_hom = np.array([v_bar[0], v_bar[1], v_bar[2], 1.0], dtype=np.float64)
         cost = float(v_hom.T @ Q @ v_hom)
         return v_bar, max(0.0, cost)
+
+    def decimate_mesh(
+        self,
+        vertices: np.ndarray,
+        faces: np.ndarray,
+        target_faces: Optional[int] = None
+    ) -> Tuple[np.ndarray, np.ndarray, Dict[str, Any]]:
+        """
+        Executes robust Quadric Error Metric simplification down to target face count.
+        Returns (decimated_vertices, decimated_faces, metrics_dict).
+        """
+        target = target_faces if target_faces is not None else self.target_faces
+        orig_face_count = len(faces)
+        orig_vert_count = len(vertices)
+
+        if orig_face_count <= target:
+            return np.array(vertices, copy=True), np.array(faces, copy=True), {
+                "before_faces": orig_face_count,
+                "after_faces": orig_face_count,
+                "reduction_ratio": 1.0,
+                "reduction_percentage": 0.0,
+                "bounding_box_error": 0.0
+            }
+
+        mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
+        try:
+            simplified = mesh.simplify_quadric_decimation(face_count=target)
+        except Exception:
+            try:
+                simplified = mesh.simplify_quadratic_decimation(face_count=target)
+            except Exception:
+                simplified = mesh
+
+        dec_faces = simplified.faces
+        dec_verts = simplified.vertices
+        after_count = len(dec_faces)
+        reduction_ratio = round(after_count / orig_face_count, 4)
+        reduction_pct = round((1.0 - reduction_ratio) * 100.0, 2)
+
+        # Approximate bounding box diagonal error
+        b_orig = np.ptp(vertices, axis=0)
+        b_dec = np.ptp(dec_verts, axis=0)
+        bb_error = round(float(np.linalg.norm(b_orig - b_dec)), 6)
+
+        metrics = {
+            "before_faces": orig_face_count,
+            "after_faces": after_count,
+            "before_vertices": orig_vert_count,
+            "after_vertices": len(dec_verts),
+            "reduction_ratio": reduction_ratio,
+            "reduction_percentage": reduction_pct,
+            "bounding_box_error": bb_error
+        }
+        return dec_verts, dec_faces, metrics
