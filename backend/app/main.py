@@ -944,3 +944,20 @@ def api_compile_pbr_material(payload: Dict[str, Any]):
         "preset_name": preset_name,
         "material": material_spec
     }
+
+@app.get("/api/v1/optimize/benchmark")
+def api_decimation_benchmark():
+    """Profiles QEM simplification metrics across mobile, desktop, and XR target polycounts."""
+    mesh = geometry_engine.generate_mesh("benchmark asset")
+    benchmarks = []
+    for target in [1000, 5000, 10000]:
+        _, _, metrics = qem_decimator.decimate_mesh(mesh.vertices, mesh.faces, target_faces=target)
+        benchmarks.append({
+            "target_budget": target,
+            "reduction_percentage": metrics["reduction_percentage"]
+        })
+    return {
+        "status": "success",
+        "benchmarks": benchmarks,
+        "algorithm": "Garland-Heckbert QEM"
+    }
