@@ -10,7 +10,6 @@ class RadianceProbe:
     """Computes diffuse and specular ambient environmental lighting for Three.js WebGL scenes."""
 
     def __init__(self):
-        # Default neutral outdoor studio 9-coefficient SH basis
         self.default_sh = np.array([
             0.79, 0.44, 0.54, -0.38, -0.34, -0.29,
             -0.11, -0.26, -0.16
@@ -21,10 +20,7 @@ class RadianceProbe:
         normal: np.ndarray,
         sh_coefficients: Optional[np.ndarray] = None
     ) -> float:
-        """
-        Evaluates diffuse irradiance from unit surface normal using L0, L1, L2 Spherical Harmonics:
-        E(n) = c1*L00 + c2*(L1-1*y + L10*z + L11*x) + c3*L20*(3z^2 - 1) + ...
-        """
+        """Evaluates diffuse irradiance from unit normal using 9-coefficient Spherical Harmonics."""
         sh = sh_coefficients if sh_coefficients is not None else self.default_sh
         norm_len = np.linalg.norm(normal)
         if norm_len < 1e-12:
@@ -34,7 +30,6 @@ class RadianceProbe:
 
         x, y, z = n[0], n[1], n[2]
 
-        # 9 SH basis functions evaluation constants
         c1 = 0.282095
         c2 = 0.488603
         c3 = 0.315392
@@ -48,5 +43,25 @@ class RadianceProbe:
             c4 * (sh[5] * x * y + sh[6] * y * z + sh[7] * x * z) +
             c5 * sh[8] * (x * x - y * y)
         )
-
         return float(np.clip(irradiance, 0.0, 5.0))
+
+    def generate_brdf_lut(self, resolution: int = 128) -> np.ndarray:
+        """
+        Integrates split-sum specular environmental BRDF 2D lookup table:
+        Output channel R: Specular scale factor (F0 scale)
+        Output channel G: Specular bias factor
+        """
+        lut = np.zeros((resolution, resolution, 2), dtype=np.float32)
+        for y in range(resolution):
+            roughness = max(1e-3, y / float(resolution - 1))
+            for x in range(resolution):
+                n_dot_v = max(1e-3, x / float(resolution - 1))
+                # Karis approximation to split-sum microfacet integration
+                k = (roughness * roughness) / 2.0
+                g_v = n_dot_v / (n_dot_v * (1.0 - k) + k)
+                fc = (1.0 - n_dot_v) ** 5.0
+                scale = g_v * (1.0 - fc)
+                bias = g_v * fc
+                lut[y, x, 0] = float(np.clip(scale, 0.0, 1.0))
+                lut[y, x, 1] = float(np.clip(bias, 0.0, 1.0))
+        return lut
