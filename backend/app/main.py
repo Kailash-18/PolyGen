@@ -979,3 +979,19 @@ def api_compile_advanced_material(payload: Dict[str, Any]):
         "status": "success",
         **result
     }
+
+@app.post("/api/v1/materials/update-property")
+def api_update_material_property(payload: Dict[str, Any]):
+    """Updates live WebGL material property in real-time."""
+    material_id = payload.get("material_id", "default")
+    prop_name = payload.get("property_name", "roughness")
+    new_val = payload.get("new_value", 0.5)
+    res = unified_pbr_pipeline.bridge.update_material_property(
+        material_id=material_id,
+        property_name=prop_name,
+        new_value=new_val
+    )
+    return {
+        "status": "success",
+        **res
+    }
