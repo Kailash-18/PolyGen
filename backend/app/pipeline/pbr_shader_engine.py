@@ -31,26 +31,42 @@ class PBRShaderEngine:
         clamped = np.clip(transmittance, 0.0, 1.0)
         return (float(clamped[0]), float(clamped[1]), float(clamped[2]))
 
+    def evaluate_clearcoat_layer(
+        self,
+        base_reflectance: float,
+        clearcoat_factor: float,
+        clearcoat_roughness: float,
+        cos_theta: float
+    ) -> float:
+        """
+        Evaluates composite specular reflection with dual-layer clearcoat attenuation:
+        R_total = R_c + (1 - R_c)^2 * R_base.
+        """
+        # Clearcoat dielectric layer typically has fixed IOR=1.5 (F0=0.04)
+        f0_clearcoat = 0.04
+        c_theta = float(np.clip(cos_theta, 0.0, 1.0))
+        r_c = clearcoat_factor * (f0_clearcoat + (1.0 - f0_clearcoat) * ((1.0 - c_theta) ** 5))
+
+        # Attenuate base reflection through clearcoat interface
+        transmitted = (1.0 - r_c) ** 2
+        total_specular = r_c + transmitted * base_reflectance
+        return float(np.clip(total_specular, 0.0, 1.0))
+
     def generate_thickness_map(
         self,
         vertices: np.ndarray,
         faces: np.ndarray,
         resolution: int = 512
     ) -> np.ndarray:
-        """
-        Estimates local geometric thickness map for translucent and SSS materials.
-        Returns a single-channel normalized float array of shape (resolution, resolution).
-        """
+        """Estimates local geometric thickness map for translucent and SSS materials."""
         thickness_map = np.full((resolution, resolution), 0.5, dtype=np.float32)
         if len(vertices) == 0:
             return thickness_map
 
-        # Approximate thickness by distance from mesh center
         center = np.mean(vertices, axis=0)
         radii = np.linalg.norm(vertices - center, axis=1)
         max_r = max(float(np.max(radii)), 1e-6)
 
-        # Modulate into map
         step = max(1, resolution // max(len(vertices), 1))
         for i, r in enumerate(radii[:min(len(radii), resolution)]):
             px = (i * step) % resolution
