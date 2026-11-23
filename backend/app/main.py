@@ -995,3 +995,20 @@ def api_update_material_property(payload: Dict[str, Any]):
         "status": "success",
         **res
     }
+
+@app.get("/api/v1/materials/presets-library")
+def api_get_presets_library():
+    """Returns catalog of all registered enterprise PBR material presets."""
+    presets = list(pbr_material_system._profiles.keys())
+    return {
+        "status": "success",
+        "count": len(presets),
+        "presets": presets,
+        "supported_extensions": [
+            "KHR_materials_clearcoat",
+            "KHR_materials_ior",
+            "KHR_materials_transmission",
+            "KHR_materials_volume",
+            "KHR_materials_emissive_strength"
+        ]
+    }
