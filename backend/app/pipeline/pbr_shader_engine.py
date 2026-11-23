@@ -12,16 +12,28 @@ class PBRShaderEngine:
     def __init__(self):
         pass
 
+    def compute_f0_from_ior(self, ior: float, medium_ior: float = 1.0) -> float:
+        """
+        Derives normal incidence specular reflectance F0 from Index of Refraction:
+        F0 = ((n_mat - n_med) / (n_mat + n_med))^2.
+        """
+        if (ior + medium_ior) <= 1e-6:
+            return 0.04
+        val = (ior - medium_ior) / (ior + medium_ior)
+        return float(val * val)
+
+    def evaluate_fresnel_schlick(self, f0: float, cos_theta: float) -> float:
+        """Evaluates Fresnel-Schlick reflection factor: F(theta) = F0 + (1 - F0)(1 - cos_theta)^5."""
+        c = float(np.clip(cos_theta, 0.0, 1.0))
+        return float(f0 + (1.0 - f0) * ((1.0 - c) ** 5))
+
     def compute_beer_lambert_attenuation(
         self,
         thickness: float,
         attenuation_distance: float,
         attenuation_color: Tuple[float, float, float]
     ) -> Tuple[float, float, float]:
-        """
-        Computes light absorption through volumetric media via Beer-Lambert law:
-        T = exp(-sigma_a * distance).
-        """
+        """Computes light absorption through volumetric media via Beer-Lambert law."""
         if attenuation_distance <= 1e-6:
             return (1.0, 1.0, 1.0)
 
@@ -38,16 +50,10 @@ class PBRShaderEngine:
         clearcoat_roughness: float,
         cos_theta: float
     ) -> float:
-        """
-        Evaluates composite specular reflection with dual-layer clearcoat attenuation:
-        R_total = R_c + (1 - R_c)^2 * R_base.
-        """
-        # Clearcoat dielectric layer typically has fixed IOR=1.5 (F0=0.04)
+        """Evaluates composite specular reflection with dual-layer clearcoat attenuation."""
         f0_clearcoat = 0.04
         c_theta = float(np.clip(cos_theta, 0.0, 1.0))
         r_c = clearcoat_factor * (f0_clearcoat + (1.0 - f0_clearcoat) * ((1.0 - c_theta) ** 5))
-
-        # Attenuate base reflection through clearcoat interface
         transmitted = (1.0 - r_c) ** 2
         total_specular = r_c + transmitted * base_reflectance
         return float(np.clip(total_specular, 0.0, 1.0))
