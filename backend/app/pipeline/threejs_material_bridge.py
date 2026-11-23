@@ -4,7 +4,6 @@ Maintains live parameter state and serializes updates for the interactive 3D can
 """
 
 from typing import Dict, Any, List, Optional
-import json
 
 class ThreeJSMaterialBridge:
     """Manages dynamic WebGL shader material parameters and live canvas telemetry."""
@@ -20,6 +19,32 @@ class ThreeJSMaterialBridge:
     def get_material(self, material_id: str) -> Optional[Dict[str, Any]]:
         """Retrieves active material configuration."""
         return self._active_materials.get(material_id)
+
+    def update_material_property(
+        self,
+        material_id: str,
+        property_name: str,
+        new_value: Any
+    ) -> Dict[str, Any]:
+        """
+        Dynamically mutates a material parameter without recompiling shaders.
+        Supports: 'color', 'roughness', 'metalness', 'clearcoat', 'ior', 'transmission'.
+        """
+        if material_id not in self._active_materials:
+            self._active_materials[material_id] = {
+                "type": "MeshPhysicalMaterial",
+                "color": "#cccccc",
+                "roughness": 0.5,
+                "metalness": 0.0
+            }
+
+        self._active_materials[material_id][property_name] = new_value
+        return {
+            "material_id": material_id,
+            "updated_property": property_name,
+            "new_value": new_value,
+            "material": self._active_materials[material_id]
+        }
 
     def serialize_threejs_payload(self, material_id: str) -> Dict[str, Any]:
         """Constructs JSON payload for direct ingestion by Three.js Material Loader."""
