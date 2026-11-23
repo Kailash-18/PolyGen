@@ -5,73 +5,107 @@ import type { UserProfile } from '../types';
 interface AuthContextType {
   user: UserProfile | null;
   isLoggedIn: boolean;
-  showAuthModal: boolean;
-  setShowAuthModal: (open: boolean) => void;
-  login: (email?: string, password?: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
+  register: (username: string, password: string, email: string) => Promise<void>;
   logout: () => void;
+  authError: string | null;
+  setAuthError: (err: string | null) => void;
 }
-
-const DEFAULT_USER: UserProfile = {
-  name: 'Kailash',
-  email: 'kailash@polygen.ai',
-  role: 'Frontend & 3D Lead',
-  plan: 'Pro Studio',
-  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80'
-};
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isLoggedIn: false,
-  showAuthModal: false,
-  setShowAuthModal: () => {},
   login: async () => {},
-  logout: () => {}
+  register: async () => {},
+  logout: () => {},
+  authError: null,
+  setAuthError: () => {}
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(() => {
-    const saved = localStorage.getItem('polygen_user');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return DEFAULT_USER;
-      }
+    try {
+      const saved = localStorage.getItem('polygen_auth') || localStorage.getItem('polygen_user');
+      return saved ? JSON.parse(saved) : null; // Strictly NULL if not authenticated!
+    } catch {
+      return null;
     }
-    return DEFAULT_USER;
   });
 
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
+      localStorage.setItem('polygen_auth', JSON.stringify(user));
       localStorage.setItem('polygen_user', JSON.stringify(user));
     } else {
+      localStorage.removeItem('polygen_auth');
       localStorage.removeItem('polygen_user');
     }
   }, [user]);
 
-  const login = async (email: string = 'kailash@polygen.ai') => {
+  const login = async (username: string, password: string) => {
+    setAuthError(null);
     try {
       const res = await fetch('http://localhost:8000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ username, password })
       });
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data.user);
-      } else {
-        setUser({ ...DEFAULT_USER, email });
+
+      if (!res.ok) {
+        throw new Error('Wrong credentials');
       }
-    } catch {
-      setUser({ ...DEFAULT_USER, email });
+
+      const data = await res.json();
+      const profile: UserProfile = {
+        name: data.user.display_name || data.user.username,
+        email: data.user.email || `${username}@polygen.ai`,
+        role: data.user.role || 'Studio Lead',
+        plan: 'Enterprise Pro',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80'
+      };
+
+      setUser(profile);
+    } catch (err: any) {
+      setAuthError('Wrong credentials');
+      throw err;
     }
-    setShowAuthModal(false);
+  };
+
+  const register = async (username: string, password: string, email: string) => {
+    setAuthError(null);
+    try {
+      const res = await fetch('http://localhost:8000/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, email })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || 'Registration failed');
+      }
+
+      const data = await res.json();
+      const profile: UserProfile = {
+        name: data.user.display_name || data.user.username,
+        email: data.user.email || email,
+        role: data.user.role || 'Studio Developer',
+        plan: 'Developer Tier',
+        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=256&q=80'
+      };
+
+      setUser(profile);
+    } catch (err: any) {
+      setAuthError(err.message || 'Registration failed');
+      throw err;
+    }
   };
 
   const logout = () => {
     setUser(null);
+    setAuthError(null);
   };
 
   return (
@@ -79,10 +113,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         isLoggedIn: !!user,
-        showAuthModal,
-        setShowAuthModal,
         login,
-        logout
+        register,
+        logout,
+        authError,
+        setAuthError
       }}
     >
       {children}

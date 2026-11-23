@@ -1,4 +1,4 @@
-import { RotateCw, Sun, Image as ImageIcon } from 'lucide-react';
+import { RotateCw, Sun, Image as ImageIcon, Layers, FileSpreadsheet } from 'lucide-react';
 import type { RenderMode } from '../types';
 
 interface CanvasControlsProps {
@@ -10,6 +10,9 @@ interface CanvasControlsProps {
   setLightIntensity: (i: number) => void;
   hasTextures: boolean;
   onOpenTextures: () => void;
+  explodeProgress: number;
+  setExplodeProgress: (p: number) => void;
+  onOpenBom: () => void;
 }
 
 export function CanvasControls({
@@ -20,71 +23,103 @@ export function CanvasControls({
   lightIntensity,
   setLightIntensity,
   hasTextures,
-  onOpenTextures
+  onOpenTextures,
+  explodeProgress,
+  setExplodeProgress,
+  onOpenBom
 }: CanvasControlsProps) {
   return (
-    <div className="canvas-controls-overlay">
-      {/* Mode switcher segmented button */}
-      <div className="segmented-control">
+    <>
+      {/* Top Left Floating Pill: Shading & Turntable */}
+      <div className="canvas-float-left">
+        <div className="clean-segmented">
+          <button
+            onClick={() => setRenderMode('pbr')}
+            className={`clean-segment-btn ${renderMode === 'pbr' ? 'active' : ''}`}
+            title="PBR Textured Surface"
+          >
+            Textured
+          </button>
+          <button
+            onClick={() => setRenderMode('shaded')}
+            className={`clean-segment-btn ${renderMode === 'shaded' ? 'active' : ''}`}
+            title="Clay Shaded Surface"
+          >
+            Clay
+          </button>
+          <button
+            onClick={() => setRenderMode('wireframe')}
+            className={`clean-segment-btn ${renderMode === 'wireframe' ? 'active' : ''}`}
+            title="Wireframe Topology"
+          >
+            Wireframe
+          </button>
+        </div>
+
         <button
-          onClick={() => setRenderMode('pbr')}
-          className={`segment-btn ${renderMode === 'pbr' ? 'active' : ''}`}
-          title="PBR Textured Surface"
+          onClick={() => setAutoRotate((prev) => !prev)}
+          className={`clean-icon-pill ${autoRotate ? 'active' : ''}`}
+          title={autoRotate ? 'Pause Turntable Rotation' : 'Start Turntable Rotation'}
         >
-          <span>PBR Textured</span>
-        </button>
-        <button
-          onClick={() => setRenderMode('shaded')}
-          className={`segment-btn ${renderMode === 'shaded' ? 'active' : ''}`}
-          title="Clay Shaded Surface"
-        >
-          <span>Clay Shaded</span>
-        </button>
-        <button
-          onClick={() => setRenderMode('wireframe')}
-          className={`segment-btn ${renderMode === 'wireframe' ? 'active' : ''}`}
-          title="Wireframe Topology"
-        >
-          <span>Wireframe</span>
+          <RotateCw className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      {/* Auto Rotate */}
-      <button
-        onClick={() => setAutoRotate((prev) => !prev)}
-        className={`ctrl-btn ${autoRotate ? 'active' : ''}`}
-        title="Toggle Turntable Rotation"
-      >
-        <RotateCw className="w-3.5 h-3.5" />
-        <span>{autoRotate ? 'Rotate: On' : 'Rotate: Off'}</span>
-      </button>
+      {/* Top Right Floating Pill: Tools & Inspection */}
+      <div className="canvas-float-right">
+        {/* Exploded View Slider */}
+        <div className="clean-slider-item" title="Kinematic Exploded View">
+          <Layers className="w-3.5 h-3.5 text-cyan-400" />
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={Math.round(explodeProgress * 100)}
+            onChange={(e) => setExplodeProgress(Number(e.target.value) / 100)}
+            className="clean-range-input"
+          />
+          <span className="clean-slider-text">
+            {Math.round(explodeProgress * 100)}%
+          </span>
+        </div>
 
-      {/* PBR Texture maps inspector button */}
-      {hasTextures && (
+        {/* BOM Button */}
         <button
-          onClick={onOpenTextures}
-          className="ctrl-btn btn-accent-glow"
-          title="Inspect Albedo, Normal, and Roughness Maps"
+          onClick={onOpenBom}
+          className="clean-tool-btn text-emerald-400"
+          title="Bill of Materials & Cost"
         >
-          <ImageIcon className="w-3.5 h-3.5 text-purple-400" />
-          <span>Inspect PBR Maps</span>
+          <FileSpreadsheet className="w-3.5 h-3.5" />
+          <span>BOM</span>
         </button>
-      )}
 
-      {/* Light Intensity Slider */}
-      <div className="ctrl-slider-group">
-        <Sun className="w-3.5 h-3.5 text-amber-400" />
-        <input
-          type="range"
-          min={0.3}
-          max={2.5}
-          step={0.1}
-          value={lightIntensity}
-          onChange={(e) => setLightIntensity(Number(e.target.value))}
-          className="ctrl-range"
-          title="Adjust Studio Lighting"
-        />
+        {/* PBR Maps Button */}
+        {hasTextures && (
+          <button
+            onClick={onOpenTextures}
+            className="clean-tool-btn text-purple-400"
+            title="PBR Maps Inspector"
+          >
+            <ImageIcon className="w-3.5 h-3.5" />
+            <span>Maps</span>
+          </button>
+        )}
+
+        {/* Light Slider */}
+        <div className="clean-slider-item" title="Studio Lighting Intensity">
+          <Sun className="w-3.5 h-3.5 text-amber-400" />
+          <input
+            type="range"
+            min={0.3}
+            max={2.5}
+            step={0.1}
+            value={lightIntensity}
+            onChange={(e) => setLightIntensity(Number(e.target.value))}
+            className="clean-range-input"
+          />
+        </div>
       </div>
-    </div>
+    </>
   );
 }

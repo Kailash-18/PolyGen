@@ -9,6 +9,7 @@ interface Scene3DProps {
   renderMode: RenderMode;
   autoRotate: boolean;
   lightIntensity: number;
+  explodeProgress: number;
 }
 
 function LoadingSpinner() {
@@ -22,14 +23,28 @@ function LoadingSpinner() {
   );
 }
 
-function LoadedModel({ url, renderMode }: { url: string; renderMode: RenderMode }) {
+function LoadedModel({
+  url,
+  renderMode,
+  explodeProgress
+}: {
+  url: string;
+  renderMode: RenderMode;
+  explodeProgress: number;
+}) {
   const { scene } = useGLTF(url);
+  const groupRef = useRef<THREE.Group>(null);
+  const originalPositions = useRef<Map<THREE.Object3D, THREE.Vector3>>(new Map());
 
   scene.traverse((child) => {
     if ((child as THREE.Mesh).isMesh) {
       const mesh = child as THREE.Mesh;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
+
+      if (!originalPositions.current.has(mesh)) {
+        originalPositions.current.set(mesh, mesh.position.clone());
+      }
 
       if (renderMode === 'wireframe') {
         if (Array.isArray(mesh.material)) {
@@ -40,7 +55,6 @@ function LoadedModel({ url, renderMode }: { url: string; renderMode: RenderMode 
           (mesh.material as THREE.MeshStandardMaterial).wireframe = true;
         }
       } else if (renderMode === 'shaded') {
-        // Clay inspection material
         mesh.material = new THREE.MeshStandardMaterial({
           color: '#cbd5e1',
           roughness: 0.6,
@@ -48,7 +62,6 @@ function LoadedModel({ url, renderMode }: { url: string; renderMode: RenderMode 
           wireframe: false
         });
       } else {
-        // PBR Textured Mode (original texture from GLB)
         if (Array.isArray(mesh.material)) {
           mesh.material.forEach((m) => {
             if ('wireframe' in m) (m as THREE.MeshStandardMaterial).wireframe = false;
@@ -57,21 +70,29 @@ function LoadedModel({ url, renderMode }: { url: string; renderMode: RenderMode 
           (mesh.material as THREE.MeshStandardMaterial).wireframe = false;
         }
       }
+
+      // Kinematic Exploded View
+      const orig = originalPositions.current.get(mesh);
+      if (orig) {
+        const dir = orig.clone().normalize();
+        if (dir.lengthSq() < 0.001) dir.set(0, 1, 0);
+        mesh.position.copy(orig).add(dir.multiplyScalar(explodeProgress * 1.5));
+      }
     }
   });
 
   return (
     <Center top>
-      <primitive object={scene.clone(true)} scale={1.5} />
+      <primitive ref={groupRef} object={scene.clone(true)} scale={1.5} />
     </Center>
   );
 }
 
-function FallbackGeometry({ renderMode }: { renderMode: RenderMode }) {
+function FallbackGeometry({ renderMode, autoRotate }: { renderMode: RenderMode; autoRotate: boolean }) {
   const meshRef = useRef<THREE.Mesh>(null);
 
   useFrame((_, delta) => {
-    if (meshRef.current) {
+    if (autoRotate && meshRef.current) {
       meshRef.current.rotation.y += delta * 0.4;
     }
   });
@@ -95,13 +116,14 @@ export function Scene3D({
   modelUrl,
   renderMode,
   autoRotate,
-  lightIntensity
+  lightIntensity,
+  explodeProgress
 }: Scene3DProps) {
   return (
     <div className="scene-container">
       <Canvas
         shadows
-        camera={{ position: [0, 2, 5], fov: 45 }}
+        camera={{ position: [0, 2.5, 5], fov: 45 }}
         gl={{ antialias: true, preserveDrawingBuffer: true }}
       >
         <ambientLight intensity={lightIntensity * 0.45} />
@@ -117,13 +139,16 @@ export function Scene3D({
 
         <Suspense fallback={<LoadingSpinner />}>
           {modelUrl ? (
-            <LoadedModel url={modelUrl} renderMode={renderMode} />
+            <LoadedModel
+              url={modelUrl}
+              renderMode={renderMode}
+              explodeProgress={explodeProgress}
+            />
           ) : (
-            <FallbackGeometry renderMode={renderMode} />
+            <FallbackGeometry renderMode={renderMode} autoRotate={autoRotate} />
           )}
         </Suspense>
 
-        {/* Studio Floor Grid */}
         <Grid
           renderOrder={-1}
           position={[0, -0.01, 0]}

@@ -1,4 +1,4 @@
-import { CheckCircle2, Loader2, Sparkles, Box, Scissors, Compass } from 'lucide-react';
+import { CheckCircle2, Loader2, Sparkles, Box, Scissors, Compass, Paintbrush } from 'lucide-react';
 import type { ProgressUpdate } from '../types';
 
 interface ProgressBarProps {
@@ -9,7 +9,8 @@ const STAGES = [
   { step: 1, title: 'Geometry Synthesis', icon: Sparkles },
   { step: 2, title: 'QEM Decimation', icon: Scissors },
   { step: 3, title: 'UV Parameterization', icon: Compass },
-  { step: 4, title: 'GLB Packaging', icon: Box }
+  { step: 4, title: 'PBR Texturing', icon: Paintbrush },
+  { step: 5, title: 'GLB Packaging', icon: Box }
 ];
 
 export function ProgressBar({ progressData }: ProgressBarProps) {

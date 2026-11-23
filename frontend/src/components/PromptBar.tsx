@@ -1,27 +1,33 @@
-import { Sparkles, Layers } from 'lucide-react';
+import { Sparkles, Layers, Palette } from 'lucide-react';
 
 interface PromptBarProps {
   prompt: string;
   setPrompt: (p: string) => void;
   targetFaces: number;
   setTargetFaces: (f: number) => void;
+  stylePreset: string;
+  setStylePreset: (s: string) => void;
   onGenerate: () => void;
   isLoading: boolean;
 }
 
 const PRESETS = [
   "A rusted medieval broadsword with a glowing blue sapphire in the hilt",
-  "An ancient ceramic Greek vase with etched geometric patterns",
-  "A glowing hexagonal crystal cluster with obsidian base",
   "A heavy knight tower shield with reinforced iron boss",
-  "A gothic carved wooden chair"
+  "An ancient ceramic Greek vase with etched geometric patterns",
+  "A gothic carved wooden chair",
+  "A glowing hexagonal crystal cluster with obsidian base"
 ];
+
+const STYLES = ['Realistic PBR', 'Stylized Game', 'Sci-Fi Cyber', 'Antique'];
 
 export function PromptBar({
   prompt,
   setPrompt,
   targetFaces,
   setTargetFaces,
+  stylePreset,
+  setStylePreset,
   onGenerate,
   isLoading
 }: PromptBarProps) {
@@ -36,7 +42,7 @@ export function PromptBar({
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !isLoading && onGenerate()}
-              placeholder="Describe a 3D asset (e.g. 'A rusted medieval broadsword...')"
+              placeholder="Describe a 3D asset (e.g. 'A rusted medieval broadsword with sapphire in hilt')..."
               className="prompt-input"
               disabled={isLoading}
             />
@@ -50,7 +56,7 @@ export function PromptBar({
             {isLoading ? (
               <>
                 <div className="btn-spinner" />
-                <span>Generating 3D Mesh...</span>
+                <span>Generating Asset...</span>
               </>
             ) : (
               <>
@@ -65,7 +71,7 @@ export function PromptBar({
         <div className="options-row">
           <div className="slider-group">
             <Layers className="w-3.5 h-3.5 text-slate-400" />
-            <span className="slider-label">Target Decimation:</span>
+            <span className="slider-label">Decimation:</span>
             <input
               type="range"
               min={2000}
@@ -79,20 +85,50 @@ export function PromptBar({
             <span className="slider-val">{targetFaces.toLocaleString()} polys</span>
           </div>
 
+          {/* Style Presets */}
+          <div className="style-group">
+            <Palette className="w-3.5 h-3.5 text-slate-400" />
+            <span className="slider-label">Texture Style:</span>
+            <div className="style-chips">
+              {STYLES.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setStylePreset(s)}
+                  className={`style-chip-btn ${stylePreset === s ? 'active' : ''}`}
+                  disabled={isLoading}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Quick presets */}
           <div className="preset-chips">
             <span className="presets-label">Quick Prompts:</span>
-            {PRESETS.map((p, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => setPrompt(p)}
-                disabled={isLoading}
-                className="chip-btn"
-              >
-                {p.split(' ')[1] || 'Item'}
-              </button>
-            ))}
+            {PRESETS.map((p, idx) => {
+              const label = p.includes('broadsword')
+                ? 'Sword'
+                : p.includes('shield')
+                ? 'Shield'
+                : p.includes('vase')
+                ? 'Vase'
+                : p.includes('chair')
+                ? 'Chair'
+                : 'Crystal';
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setPrompt(p)}
+                  disabled={isLoading}
+                  className="chip-btn"
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

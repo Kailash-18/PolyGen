@@ -1,41 +1,68 @@
 import { useState, useEffect } from 'react';
 import './App.css';
+import { ThemeProvider } from './context/ThemeContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { Scene3D } from './canvas/Scene3D';
 import { PromptBar } from './components/PromptBar';
 import { ProgressBar } from './components/ProgressBar';
 import { StatsCard } from './components/StatsCard';
 import { CanvasControls } from './components/CanvasControls';
-import type { ModelMetadata, ProgressUpdate } from './types';
+import { LibraryView } from './components/LibraryView';
+import { AuditView } from './components/AuditView';
+import { LoginDashboard } from './components/LoginDashboard';
+import { TexturePreviewModal } from './components/TexturePreviewModal';
+import { BomDrawer } from './components/BomDrawer';
+import type { ModelMetadata, ProgressUpdate, ActiveTab, RenderMode } from './types';
 
 const API_BASE = 'http://localhost:8000';
 const WS_BASE = 'ws://localhost:8000';
 
-export function App() {
+function AuthenticatedStudio() {
+  const [activeTab, setActiveTab] = useState<ActiveTab>('studio');
   const [prompt, setPrompt] = useState('A rusted medieval broadsword with a glowing blue sapphire in the hilt');
   const [targetFaces, setTargetFaces] = useState(10000);
+  const [stylePreset, setStylePreset] = useState('Realistic PBR');
   const [isLoading, setIsLoading] = useState(false);
   const [progressData, setProgressData] = useState<ProgressUpdate | null>(null);
   const [activeModel, setActiveModel] = useState<ModelMetadata | null>(null);
+  const [modelsList, setModelsList] = useState<ModelMetadata[]>([]);
   const [gpuInfo, setGpuInfo] = useState<{ cuda_available: boolean; device_name: string } | undefined>(undefined);
 
-  // 3D Canvas Settings
-  const [wireframe, setWireframe] = useState(false);
-  const [autoRotate, setAutoRotate] = useState(true);
+  // 3D Viewport Controls
+  const [renderMode, setRenderMode] = useState<RenderMode>('pbr');
+  const [autoRotate, setAutoRotate] = useState(false);
   const [lightIntensity, setLightIntensity] = useState(1.2);
+  const [explodeProgress, setExplodeProgress] = useState(0);
 
-  // Check backend health on mount
+  // Modals / Drawers
+  const [textureModalModel, setTextureModalModel] = useState<ModelMetadata | null>(null);
+  const [bomModalModelId, setBomModalModelId] = useState<string | null>(null);
+
+  // Fetch initial health and library models on load
+  const loadModels = () => {
+    fetch(`${API_BASE}/api/models`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.models && Array.isArray(data.models)) {
+          setModelsList(data.models);
+          if (!activeModel && data.models.length > 0) {
+            setActiveModel(data.models[0]);
+          }
+        }
+      })
+      .catch((err) => console.warn('Could not load models list:', err));
+  };
+
   useEffect(() => {
     fetch(`${API_BASE}/api/health`)
       .then((res) => res.json())
       .then((data) => {
-        if (data.gpu) {
-          setGpuInfo(data.gpu);
-        }
+        if (data.gpu) setGpuInfo(data.gpu);
       })
-      .catch((err) => {
-        console.warn('Backend not yet reachable on port 8000:', err);
-      });
+      .catch((err) => console.warn('Backend not yet reachable on port 8000:', err));
+
+    loadModels();
   }, []);
 
   const handleGenerate = () => {
@@ -44,10 +71,10 @@ export function App() {
     setIsLoading(true);
     setProgressData({
       step: 1,
-      total_steps: 4,
+      total_steps: 5,
       stage: 'Connecting',
       progress: 5,
-      message: 'Connecting to PolyGen AI Pipeline...'
+      message: 'Connecting to PolyGen Multi-Stage AI Pipeline...'
     });
 
     try {
@@ -55,7 +82,7 @@ export function App() {
 
       ws.onopen = () => {
         ws.send(JSON.stringify({
-          prompt: prompt.trim(),
+          prompt: `${prompt.trim()} (${stylePreset})`,
           target_faces: targetFaces,
           detail_level: 'high'
         }));
@@ -74,6 +101,7 @@ export function App() {
 
         if (data.progress === 100 && data.result) {
           setActiveModel(data.result);
+          setModelsList((prev) => [data.result, ...prev]);
           setIsLoading(false);
           ws.close();
         }
@@ -92,17 +120,17 @@ export function App() {
     try {
       setProgressData({
         step: 2,
-        total_steps: 4,
+        total_steps: 5,
         stage: 'Generating',
-        progress: 50,
-        message: 'Synthesizing geometry & optimizing mesh...'
+        progress: 40,
+        message: 'Synthesizing 3D geometry & PBR texture maps...'
       });
 
       const res = await fetch(`${API_BASE}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: prompt.trim(),
+          prompt: `${prompt.trim()} (${stylePreset})`,
           target_faces: targetFaces,
           detail_level: 'high'
         })
@@ -112,12 +140,13 @@ export function App() {
       const data: ModelMetadata = await res.json();
 
       setActiveModel(data);
+      setModelsList((prev) => [data, ...prev]);
       setProgressData({
-        step: 4,
-        total_steps: 4,
+        step: 5,
+        total_steps: 5,
         stage: 'Complete',
         progress: 100,
-        message: '3D Asset ready!',
+        message: '3D Asset ready with PBR textures!',
         result: data
       });
     } catch (err: any) {
@@ -127,45 +156,134 @@ export function App() {
     }
   };
 
+  const handleDeleteModel = async (id: string) => {
+    if (!confirm(`Are you sure you want to delete asset ${id}?`)) return;
+    try {
+      await fetch(`${API_BASE}/api/models/${id}`, { method: 'DELETE' });
+      setModelsList((prev) => prev.filter((m) => m.model_id !== id));
+      if (activeModel?.model_id === id) {
+        setActiveModel(null);
+      }
+    } catch (err) {
+      console.error('Failed to delete model:', err);
+    }
+  };
+
   const currentGlbUrl = activeModel ? `${API_BASE}${activeModel.urls.glb}` : null;
+  const hasTextures = !!(activeModel?.textures && Object.keys(activeModel.textures).length > 0);
 
   return (
     <div className="app-container">
-      <Navbar gpuInfo={gpuInfo} />
+      <Navbar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        gpuInfo={gpuInfo}
+      />
 
       <main className="workspace-layout">
-        <section className="viewport-area">
-          <CanvasControls
-            wireframe={wireframe}
-            setWireframe={setWireframe}
-            autoRotate={autoRotate}
-            setAutoRotate={setAutoRotate}
-            lightIntensity={lightIntensity}
-            setLightIntensity={setLightIntensity}
+        {activeTab === 'studio' && (
+          <section className="viewport-area">
+            <CanvasControls
+              renderMode={renderMode}
+              setRenderMode={setRenderMode}
+              autoRotate={autoRotate}
+              setAutoRotate={setAutoRotate}
+              lightIntensity={lightIntensity}
+              setLightIntensity={setLightIntensity}
+              hasTextures={hasTextures}
+              onOpenTextures={() => setTextureModalModel(activeModel)}
+              explodeProgress={explodeProgress}
+              setExplodeProgress={setExplodeProgress}
+              onOpenBom={() => {
+                if (activeModel) setBomModalModelId(activeModel.model_id);
+              }}
+            />
+
+            <Scene3D
+              modelUrl={currentGlbUrl}
+              renderMode={renderMode}
+              autoRotate={autoRotate}
+              lightIntensity={lightIntensity}
+              explodeProgress={explodeProgress}
+            />
+
+            <ProgressBar progressData={progressData} />
+
+            <StatsCard
+              model={activeModel}
+              apiBase={API_BASE}
+              onOpenTextures={() => setTextureModalModel(activeModel)}
+            />
+
+            <PromptBar
+              prompt={prompt}
+              setPrompt={setPrompt}
+              targetFaces={targetFaces}
+              setTargetFaces={setTargetFaces}
+              stylePreset={stylePreset}
+              setStylePreset={setStylePreset}
+              onGenerate={handleGenerate}
+              isLoading={isLoading}
+            />
+          </section>
+        )}
+
+        {activeTab === 'library' && (
+          <LibraryView
+            models={modelsList}
+            apiBase={API_BASE}
+            onSelectModel={(m) => {
+              setActiveModel(m);
+              setActiveTab('studio');
+            }}
+            onDeleteModel={handleDeleteModel}
+            onOpenTextures={(m) => setTextureModalModel(m)}
+            onGoToStudio={() => setActiveTab('studio')}
           />
+        )}
 
-          <Scene3D
-            modelUrl={currentGlbUrl}
-            wireframe={wireframe}
-            autoRotate={autoRotate}
-            lightIntensity={lightIntensity}
-          />
-
-          <ProgressBar progressData={progressData} />
-
-          <StatsCard model={activeModel} apiBase={API_BASE} />
-
-          <PromptBar
-            prompt={prompt}
-            setPrompt={setPrompt}
-            targetFaces={targetFaces}
-            setTargetFaces={setTargetFaces}
-            onGenerate={handleGenerate}
-            isLoading={isLoading}
-          />
-        </section>
+        {activeTab === 'audit' && (
+          <AuditView models={modelsList} gpuInfo={gpuInfo} />
+        )}
       </main>
+
+      {textureModalModel && textureModalModel.textures && (
+        <TexturePreviewModal
+          modelId={textureModalModel.model_id}
+          textures={textureModalModel.textures}
+          apiBase={API_BASE}
+          onClose={() => setTextureModalModel(null)}
+        />
+      )}
+
+      {bomModalModelId && (
+        <BomDrawer
+          modelId={bomModalModelId}
+          apiBase={API_BASE}
+          onClose={() => setBomModalModelId(null)}
+        />
+      )}
     </div>
+  );
+}
+
+function RootApp() {
+  const { isLoggedIn, user } = useAuth();
+
+  if (!isLoggedIn || !user) {
+    return <LoginDashboard />;
+  }
+
+  return <AuthenticatedStudio />;
+}
+
+export function App() {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <RootApp />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

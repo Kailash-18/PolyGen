@@ -18,8 +18,14 @@ export interface ModelMetadata {
   model_id: string;
   prompt: string;
   duration_seconds: number;
+  created_at?: string;
   stats: MeshStats;
   decimation: DecimationStats;
+  textures?: {
+    albedo?: string;
+    normal?: string;
+    roughness?: string;
+  };
   urls: {
     glb: string;
     obj: string;
@@ -35,48 +41,14 @@ export interface ProgressUpdate {
   result?: ModelMetadata;
 }
 
-export interface AssemblyPart {
-  id: string;
+export interface UserProfile {
   name: string;
-  type: string;
-  shape: string;
-  size: number[];
-  position: number[];
-  rotation?: number[];
-  color: string;
-  material: string;
-  explodeDir: number[];
-  explodeDist: number;
-  cornerRadius?: number;
-  function?: string;
-  layer?: number;
+  email: string;
+  role: string;
+  plan: string;
+  avatar: string;
 }
 
-export interface AssemblyRelationship {
-  id: string;
-  from: string;
-  to: string;
-  type: string;
-  description?: string;
-}
-
-export interface AssemblyModel {
-  id: string;
-  name: string;
-  units: string;
-  overallSize: number[];
-  parts: AssemblyPart[];
-  relationships: AssemblyRelationship[];
-  primary_axis: string;
-}
-
-export interface TeardownStep {
-  step: number;
-  part_id: string;
-  part_name: string;
-  layer: number;
-  explode_dir: number[];
-  explode_dist: number;
-  requires_tool: boolean;
-  action: string;
-}
+export type ThemeMode = 'dark' | 'light';
+export type ActiveTab = 'studio' | 'library' | 'audit';
+export type RenderMode = 'pbr' | 'shaded' | 'wireframe';
