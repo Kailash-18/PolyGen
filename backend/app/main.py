@@ -961,3 +961,21 @@ def api_decimation_benchmark():
         "benchmarks": benchmarks,
         "algorithm": "Garland-Heckbert QEM"
     }
+
+
+from app.pipeline.unified_pbr_pipeline import UnifiedPBRPipeline
+unified_pbr_pipeline = UnifiedPBRPipeline()
+
+@app.post("/api/v1/materials/advanced-compile")
+def api_compile_advanced_material(payload: Dict[str, Any]):
+    """Compiles advanced PBR material with Khronos extensions and Three.js bridge."""
+    asset_id = payload.get("asset_id", "asset_01")
+    material_params = payload.get("material_params", {})
+    result = unified_pbr_pipeline.compile_asset_materials(
+        asset_id=asset_id,
+        material_params=material_params
+    )
+    return {
+        "status": "success",
+        **result
+    }
