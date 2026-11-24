@@ -32,3 +32,21 @@ class ThreeJSEnvironmentBridge:
                 "sunIntensity": preset.sun_intensity
             }
         }
+
+    def compile_postprocessing_manifest(
+        self,
+        tonemapping_type: str = "ACESFilmicToneMapping",
+        exposure: float = 1.0,
+        bloom_enabled: bool = True
+    ) -> Dict[str, Any]:
+        """Compiles post-processing pass parameters (tone mapping + unreal bloom)."""
+        return {
+            "toneMapping": tonemapping_type,
+            "toneMappingExposure": float(max(0.1, min(5.0, exposure))),
+            "bloom": {
+                "enabled": bloom_enabled,
+                "threshold": 1.2,
+                "strength": 0.45,
+                "radius": 0.85
+            }
+        }
