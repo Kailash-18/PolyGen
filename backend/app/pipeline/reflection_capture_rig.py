@@ -30,3 +30,27 @@ class ReflectionCaptureRig:
 
         r = v - 2.0 * float(np.dot(v, n)) * n
         return r / max(np.linalg.norm(r), 1e-12)
+
+    def apply_box_projection_parallax(
+        self,
+        world_pos: np.ndarray,
+        reflection_ray: np.ndarray,
+        box_min: np.ndarray,
+        box_max: np.ndarray
+    ) -> np.ndarray:
+        """
+        Calculates corrected reflection vector accounting for localized room boundaries.
+        Prevents reflections appearing infinitely distant when inside a finite vault/dungeon.
+        """
+        # Ray-AABB intersection: t = (bound - pos) / ray
+        denom = np.where(np.abs(reflection_ray) < 1e-6, 1e-6, reflection_ray)
+        t_first = (box_max - world_pos) / denom
+        t_second = (box_min - world_pos) / denom
+        t_max = np.maximum(t_first, t_second)
+        t = np.min(t_max)
+
+        # Intersection point on box boundary
+        intersection = world_pos + t * reflection_ray
+        corrected_dir = intersection - self.probe_position
+        c_norm = np.linalg.norm(corrected_dir)
+        return corrected_dir / max(c_norm, 1e-12)
