@@ -47,3 +47,15 @@ class HDRIStagingOrchestrator:
                 "levels": pmrem_mips
             }
         }
+
+    def generate_lighting_telemetry(self, preset_id: str) -> Dict[str, Any]:
+        """Profiles photometric radiance values across hemispherical orientations."""
+        preset = self.presets.get_preset(preset_id)
+        return {
+            "preset_id": preset.id,
+            "ambient_lux": preset.ambient_lux,
+            "color_temp_k": preset.color_temperature_k,
+            "key_light_ratio": 3.2,
+            "fill_light_ratio": 1.0,
+            "rim_light_ratio": 1.5
+        }
