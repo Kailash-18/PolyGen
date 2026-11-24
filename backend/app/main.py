@@ -1034,3 +1034,19 @@ def api_stage_hdri_environment(payload: Dict[str, Any]):
         "status": "success",
         "stage": res
     }
+
+@app.post("/api/v1/environment/tonemap-config")
+def api_configure_tonemapping(payload: Dict[str, Any]):
+    """Configures real-time tone mapping and post-processing pipeline."""
+    tonemapping_type = payload.get("tonemapping_type", "ACESFilmicToneMapping")
+    exposure = payload.get("exposure", 1.0)
+    bloom = payload.get("bloom_enabled", True)
+    manifest = hdri_orchestrator.bridge.compile_postprocessing_manifest(
+        tonemapping_type=tonemapping_type,
+        exposure=exposure,
+        bloom_enabled=bloom
+    )
+    return {
+        "status": "success",
+        "postprocessing": manifest
+    }
