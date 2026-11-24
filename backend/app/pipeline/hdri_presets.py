@@ -5,6 +5,7 @@ Standardized lighting rigs tailored for medieval weapons, industrial components,
 
 from typing import Dict, Any, List, Tuple
 from dataclasses import dataclass
+import numpy as np
 
 @dataclass
 class HDRIPreset:
@@ -72,6 +73,16 @@ class HDRIPresetsCatalog:
 
     def get_preset(self, preset_id: str) -> HDRIPreset:
         return self._presets.get(preset_id, self._presets["studio_neutral"])
+
+    def compute_rotation_matrix_y(self, angle_degrees: float) -> np.ndarray:
+        """Computes 3x3 rotational transformation matrix for orbiting HDRI environment."""
+        theta = np.radians(angle_degrees)
+        cos_t, sin_t = np.cos(theta), np.sin(theta)
+        return np.array([
+            [cos_t, 0.0, sin_t],
+            [0.0, 1.0, 0.0],
+            [-sin_t, 0.0, cos_t]
+        ], dtype=np.float32)
 
     def list_presets(self) -> List[Dict[str, Any]]:
         return [
