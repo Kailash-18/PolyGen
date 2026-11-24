@@ -1012,3 +1012,25 @@ def api_get_presets_library():
             "KHR_materials_emissive_strength"
         ]
     }
+
+
+from app.pipeline.hdri_staging_orchestrator import HDRIStagingOrchestrator
+hdri_orchestrator = HDRIStagingOrchestrator()
+
+@app.post("/api/v1/environment/hdri-stage")
+def api_stage_hdri_environment(payload: Dict[str, Any]):
+    """Stages HDR environment lighting and PMREM reflections for WebGL scene."""
+    asset_id = payload.get("asset_id", "asset_01")
+    preset_id = payload.get("preset_id", "studio_neutral")
+    exposure = payload.get("exposure", 1.0)
+    blur = payload.get("background_blur", 0.15)
+    res = hdri_orchestrator.stage_scene(
+        asset_id=asset_id,
+        preset_id=preset_id,
+        exposure=exposure,
+        blur=blur
+    )
+    return {
+        "status": "success",
+        "stage": res
+    }
