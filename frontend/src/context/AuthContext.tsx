@@ -59,8 +59,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const data = await res.json();
       const profile: UserProfile = {
-        name: data.user.display_name || data.user.username,
-        email: data.user.email || `${username}@polygen.ai`,
+        name: data.user.display_name || (data.user.username === 'admin' ? 'Sri Kailash' : data.user.username),
+        email: data.user.email || (data.user.username === 'admin' ? 'sri.anjaneya.kailash@gmail.com' : `${username}@polygen.ai`),
         role: data.user.role || 'Studio Lead',
         plan: 'Enterprise Pro',
         avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80'

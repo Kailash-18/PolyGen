@@ -13,7 +13,8 @@ import { AuditView } from './components/AuditView';
 import { LoginDashboard } from './components/LoginDashboard';
 import { TexturePreviewModal } from './components/TexturePreviewModal';
 import { BomDrawer } from './components/BomDrawer';
-import type { ModelMetadata, ProgressUpdate, ActiveTab, RenderMode } from './types';
+import { ViewportCustomizer } from './components/ViewportCustomizer';
+import type { ModelMetadata, ProgressUpdate, ActiveTab, RenderMode, CameraPreset, ViewportSettings } from './types';
 
 const API_BASE = 'http://localhost:8000';
 const WS_BASE = 'ws://localhost:8000';
@@ -29,15 +30,44 @@ function AuthenticatedStudio() {
   const [modelsList, setModelsList] = useState<ModelMetadata[]>([]);
   const [gpuInfo, setGpuInfo] = useState<{ cuda_available: boolean; device_name: string } | undefined>(undefined);
 
-  // 3D Viewport Controls
+  // 3D Viewport Controls & Customization
   const [renderMode, setRenderMode] = useState<RenderMode>('pbr');
   const [autoRotate, setAutoRotate] = useState(false);
   const [lightIntensity, setLightIntensity] = useState(1.2);
   const [explodeProgress, setExplodeProgress] = useState(0);
 
+  // Custom Studio Features
+  const [viewportSettings, setViewportSettings] = useState<ViewportSettings>({
+    showGrid: true,
+    showShadows: true,
+    clayColor: '#cbd5e1',
+    wireframeColor: '#38bdf8',
+    roughnessMultiplier: 1.0,
+    metalnessMultiplier: 1.0
+  });
+  const [cameraPreset, setCameraPreset] = useState<CameraPreset>('default');
+  const [resetTrigger, setResetTrigger] = useState(0);
+  const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
+
   // Modals / Drawers
   const [textureModalModel, setTextureModalModel] = useState<ModelMetadata | null>(null);
   const [bomModalModelId, setBomModalModelId] = useState<string | null>(null);
+
+  const handleCaptureSnapshot = () => {
+    const canvas = document.querySelector('.scene-container canvas') as HTMLCanvasElement;
+    if (!canvas) return;
+    try {
+      const dataUrl = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = `polygen_${activeModel?.model_id || 'viewport'}_render.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err) {
+      console.warn('Could not capture canvas snapshot:', err);
+    }
+  };
 
   // Fetch initial health and library models on load
   const loadModels = () => {
@@ -197,6 +227,9 @@ function AuthenticatedStudio() {
               onOpenBom={() => {
                 if (activeModel) setBomModalModelId(activeModel.model_id);
               }}
+              onToggleCustomizer={() => setIsCustomizerOpen((prev) => !prev)}
+              isCustomizerOpen={isCustomizerOpen}
+              onCaptureSnapshot={handleCaptureSnapshot}
             />
 
             <Scene3D
@@ -205,6 +238,22 @@ function AuthenticatedStudio() {
               autoRotate={autoRotate}
               lightIntensity={lightIntensity}
               explodeProgress={explodeProgress}
+              settings={viewportSettings}
+              cameraPreset={cameraPreset}
+              resetTrigger={resetTrigger}
+            />
+
+            <ViewportCustomizer
+              isOpen={isCustomizerOpen}
+              onClose={() => setIsCustomizerOpen(false)}
+              settings={viewportSettings}
+              setSettings={setViewportSettings}
+              cameraPreset={cameraPreset}
+              setCameraPreset={setCameraPreset}
+              onResetCamera={() => {
+                setCameraPreset('default');
+                setResetTrigger((prev) => prev + 1);
+              }}
             />
 
             <ProgressBar progressData={progressData} />

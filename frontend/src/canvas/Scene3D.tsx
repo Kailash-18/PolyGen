@@ -1,8 +1,8 @@
-import { Suspense, useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Suspense, useRef, useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Grid, Center, useGLTF, Html } from '@react-three/drei';
 import * as THREE from 'three';
-import type { RenderMode } from '../types';
+import type { RenderMode, CameraPreset, ViewportSettings } from '../types';
 
 interface Scene3DProps {
   modelUrl: string | null;
@@ -10,6 +10,9 @@ interface Scene3DProps {
   autoRotate: boolean;
   lightIntensity: number;
   explodeProgress: number;
+  settings: ViewportSettings;
+  cameraPreset: CameraPreset;
+  resetTrigger: number;
 }
 
 function LoadingSpinner() {
@@ -26,11 +29,13 @@ function LoadingSpinner() {
 function LoadedModel({
   url,
   renderMode,
-  explodeProgress
+  explodeProgress,
+  settings
 }: {
   url: string;
   renderMode: RenderMode;
   explodeProgress: number;
+  settings: ViewportSettings;
 }) {
   const { scene } = useGLTF(url);
   const groupRef = useRef<THREE.Group>(null);
@@ -39,35 +44,36 @@ function LoadedModel({
   scene.traverse((child) => {
     if ((child as THREE.Mesh).isMesh) {
       const mesh = child as THREE.Mesh;
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
+      mesh.castShadow = settings.showShadows;
+      mesh.receiveShadow = settings.showShadows;
 
       if (!originalPositions.current.has(mesh)) {
         originalPositions.current.set(mesh, mesh.position.clone());
       }
 
       if (renderMode === 'wireframe') {
-        if (Array.isArray(mesh.material)) {
-          mesh.material.forEach((m) => {
-            if ('wireframe' in m) (m as THREE.MeshStandardMaterial).wireframe = true;
-          });
-        } else if (mesh.material && 'wireframe' in mesh.material) {
-          (mesh.material as THREE.MeshStandardMaterial).wireframe = true;
-        }
+        mesh.material = new THREE.MeshBasicMaterial({
+          color: settings.wireframeColor,
+          wireframe: true
+        });
       } else if (renderMode === 'shaded') {
         mesh.material = new THREE.MeshStandardMaterial({
-          color: '#cbd5e1',
-          roughness: 0.6,
-          metalness: 0.1,
+          color: settings.clayColor,
+          roughness: Math.max(0.05, Math.min(1.0, 0.65 * settings.roughnessMultiplier)),
+          metalness: Math.max(0.0, Math.min(1.0, 0.1 * settings.metalnessMultiplier)),
           wireframe: false
         });
       } else {
+        // PBR Textured Mode
         if (Array.isArray(mesh.material)) {
           mesh.material.forEach((m) => {
             if ('wireframe' in m) (m as THREE.MeshStandardMaterial).wireframe = false;
+            if ('roughness' in m) (m as THREE.MeshStandardMaterial).roughness = Math.min(1.0, (m as THREE.MeshStandardMaterial).roughness * settings.roughnessMultiplier);
+            if ('metalness' in m) (m as THREE.MeshStandardMaterial).metalness = Math.min(1.0, (m as THREE.MeshStandardMaterial).metalness * settings.metalnessMultiplier);
           });
         } else if (mesh.material && 'wireframe' in mesh.material) {
-          (mesh.material as THREE.MeshStandardMaterial).wireframe = false;
+          const std = mesh.material as THREE.MeshStandardMaterial;
+          std.wireframe = false;
         }
       }
 
@@ -88,7 +94,15 @@ function LoadedModel({
   );
 }
 
-function FallbackGeometry({ renderMode, autoRotate }: { renderMode: RenderMode; autoRotate: boolean }) {
+function FallbackGeometry({
+  renderMode,
+  autoRotate,
+  settings
+}: {
+  renderMode: RenderMode;
+  autoRotate: boolean;
+  settings: ViewportSettings;
+}) {
   const meshRef = useRef<THREE.Mesh>(null);
 
   useFrame((_, delta) => {
@@ -97,18 +111,76 @@ function FallbackGeometry({ renderMode, autoRotate }: { renderMode: RenderMode; 
     }
   });
 
+  let geomColor = '#8b5cf6';
+  let roughnessVal = 0.25 * settings.roughnessMultiplier;
+  let metalnessVal = 0.8 * settings.metalnessMultiplier;
+  let isWire = renderMode === 'wireframe';
+
+  if (renderMode === 'shaded') {
+    geomColor = settings.clayColor;
+    roughnessVal = 0.65;
+    metalnessVal = 0.1;
+  } else if (renderMode === 'wireframe') {
+    geomColor = settings.wireframeColor;
+  }
+
   return (
     <Center top>
-      <mesh ref={meshRef} castShadow receiveShadow>
+      <mesh ref={meshRef} castShadow={settings.showShadows} receiveShadow={settings.showShadows}>
         <torusKnotGeometry args={[1, 0.35, 128, 32]} />
         <meshStandardMaterial
-          color="#8b5cf6"
-          roughness={0.25}
-          metalness={0.8}
-          wireframe={renderMode === 'wireframe'}
+          color={geomColor}
+          roughness={Math.max(0.05, Math.min(1.0, roughnessVal))}
+          metalness={Math.max(0.0, Math.min(1.0, metalnessVal))}
+          wireframe={isWire}
         />
       </mesh>
     </Center>
+  );
+}
+
+function CameraRig({
+  preset,
+  resetTrigger,
+  autoRotate
+}: {
+  preset: CameraPreset;
+  resetTrigger: number;
+  autoRotate: boolean;
+}) {
+  const { camera } = useThree();
+  const controlsRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (controlsRef.current) {
+      if (preset === 'front') {
+        camera.position.set(0, 0, 4.8);
+      } else if (preset === 'top') {
+        camera.position.set(0, 5.5, 0.001);
+      } else if (preset === 'side') {
+        camera.position.set(4.8, 0, 0);
+      } else if (preset === 'isometric') {
+        camera.position.set(3.5, 3.5, 3.5);
+      } else {
+        camera.position.set(0, 2.5, 5);
+      }
+      camera.lookAt(0, 0, 0);
+      controlsRef.current.target.set(0, 0, 0);
+      controlsRef.current.update();
+    }
+  }, [preset, resetTrigger, camera]);
+
+  return (
+    <OrbitControls
+      ref={controlsRef}
+      autoRotate={autoRotate}
+      autoRotateSpeed={1.5}
+      enableDamping
+      dampingFactor={0.05}
+      maxPolarAngle={Math.PI / 2 + 0.05}
+      minDistance={1.0}
+      maxDistance={15}
+    />
   );
 }
 
@@ -117,12 +189,15 @@ export function Scene3D({
   renderMode,
   autoRotate,
   lightIntensity,
-  explodeProgress
+  explodeProgress,
+  settings,
+  cameraPreset,
+  resetTrigger
 }: Scene3DProps) {
   return (
     <div className="scene-container">
       <Canvas
-        shadows
+        shadows={settings.showShadows}
         camera={{ position: [0, 2.5, 5], fov: 45 }}
         gl={{ antialias: true, preserveDrawingBuffer: true }}
       >
@@ -130,7 +205,7 @@ export function Scene3D({
         <directionalLight
           position={[5, 8, 5]}
           intensity={lightIntensity * 1.3}
-          castShadow
+          castShadow={settings.showShadows}
           shadow-mapSize-width={2048}
           shadow-mapSize-height={2048}
         />
@@ -143,33 +218,36 @@ export function Scene3D({
               url={modelUrl}
               renderMode={renderMode}
               explodeProgress={explodeProgress}
+              settings={settings}
             />
           ) : (
-            <FallbackGeometry renderMode={renderMode} autoRotate={autoRotate} />
+            <FallbackGeometry
+              renderMode={renderMode}
+              autoRotate={autoRotate}
+              settings={settings}
+            />
           )}
         </Suspense>
 
-        <Grid
-          renderOrder={-1}
-          position={[0, -0.01, 0]}
-          infiniteGrid
-          cellSize={0.5}
-          cellThickness={0.6}
-          cellColor="#334155"
-          sectionSize={2.5}
-          sectionThickness={1.2}
-          sectionColor="#64748b"
-          fadeDistance={30}
-        />
+        {settings.showGrid && (
+          <Grid
+            renderOrder={-1}
+            position={[0, -0.01, 0]}
+            infiniteGrid
+            cellSize={0.6}
+            cellThickness={0.5}
+            cellColor="#1e2230"
+            sectionSize={3.0}
+            sectionThickness={0.9}
+            sectionColor="#2d3548"
+            fadeDistance={24}
+          />
+        )}
 
-        <OrbitControls
+        <CameraRig
+          preset={cameraPreset}
+          resetTrigger={resetTrigger}
           autoRotate={autoRotate}
-          autoRotateSpeed={1.5}
-          enableDamping
-          dampingFactor={0.05}
-          maxPolarAngle={Math.PI / 2 + 0.05}
-          minDistance={1.2}
-          maxDistance={15}
         />
       </Canvas>
     </div>

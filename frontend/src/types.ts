@@ -52,3 +52,13 @@ export interface UserProfile {
 export type ThemeMode = 'dark' | 'light';
 export type ActiveTab = 'studio' | 'library' | 'audit';
 export type RenderMode = 'pbr' | 'shaded' | 'wireframe';
+export type CameraPreset = 'default' | 'front' | 'top' | 'side' | 'isometric';
+
+export interface ViewportSettings {
+  showGrid: boolean;
+  showShadows: boolean;
+  clayColor: string;
+  wireframeColor: string;
+  roughnessMultiplier: number;
+  metalnessMultiplier: number;
+}

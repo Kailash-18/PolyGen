@@ -1,4 +1,5 @@
-import { Download, Zap, Layers, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { Download, Box, Layers, ChevronDown, ChevronUp } from 'lucide-react';
 import type { ModelMetadata } from '../types';
 
 interface StatsCardProps {
@@ -8,96 +9,127 @@ interface StatsCardProps {
 }
 
 export function StatsCard({ model, apiBase, onOpenTextures }: StatsCardProps) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
   if (!model) return null;
 
   const hasPbr = model.textures && Object.keys(model.textures).length > 0;
 
+  if (isCollapsed) {
+    return (
+      <button
+        type="button"
+        onClick={() => setIsCollapsed(false)}
+        className="clean-stats-pill"
+        title="Expand Telemetry Specs"
+      >
+        <Box className="w-3.5 h-3.5 text-purple-400" />
+        <span className="font-semibold text-xs text-slate-200">#{model.model_id}</span>
+        <span className="clean-stats-pill-metric">{model.stats.faces.toLocaleString()} polys</span>
+        <ChevronDown className="w-3.5 h-3.5 opacity-60 ml-0.5" />
+      </button>
+    );
+  }
+
   return (
-    <div className="stats-card">
-      <div className="stats-header">
-        <div className="flex items-center gap-2">
-          <Zap className="w-4 h-4 text-amber-400" />
-          <span className="stats-title">Generated Asset Specs</span>
+    <div className="clean-stats-card">
+      {/* Header */}
+      <div className="clean-stats-header">
+        <div className="clean-stats-header-left">
+          <Box className="w-3.5 h-3.5 text-purple-400" />
+          <span className="clean-stats-title">Asset Specs</span>
+          <span className="clean-model-chip">#{model.model_id}</span>
         </div>
-        <span className="model-badge">ID: {model.model_id}</span>
+        <button
+          type="button"
+          onClick={() => setIsCollapsed(true)}
+          className="clean-collapse-btn"
+          title="Minimize Specs Card"
+        >
+          <ChevronUp className="w-3.5 h-3.5" />
+        </button>
       </div>
 
-      <div className="stats-grid">
-        <div className="stat-box">
-          <span className="stat-label">Faces (Polygons)</span>
-          <span className="stat-value text-purple-400">
+      {/* 4-Box Telemetry Grid */}
+      <div className="clean-specs-grid">
+        <div className="clean-spec-box">
+          <span className="spec-label">Faces</span>
+          <span className="spec-value text-slate-100 font-mono">
             {model.stats.faces.toLocaleString()}
           </span>
-          <span className="stat-sub">
-            from {model.decimation.before_faces.toLocaleString()}
-          </span>
+          <span className="spec-sub">orig: {model.decimation.before_faces.toLocaleString()}</span>
         </div>
 
-        <div className="stat-box">
-          <span className="stat-label">Vertices</span>
-          <span className="stat-value">
+        <div className="clean-spec-box">
+          <span className="spec-label">Vertices</span>
+          <span className="spec-value text-slate-200 font-mono">
             {model.stats.vertices.toLocaleString()}
           </span>
-          <span className="stat-sub">Cleaned & indexed</span>
+          <span className="spec-sub">Cleaned & indexed</span>
         </div>
 
-        <div className="stat-box">
-          <span className="stat-label">Optimization</span>
-          <span className="stat-value text-emerald-400">
+        <div className="clean-spec-box">
+          <span className="spec-label">Decimation</span>
+          <span className="spec-value text-emerald-400 font-mono">
             {model.decimation.reduction_percentage}
           </span>
-          <span className="stat-sub">QEM reduction</span>
+          <span className="spec-sub">QEM topology</span>
         </div>
 
-        <div className="stat-box">
-          <span className="stat-label">Generation Time</span>
-          <span className="stat-value text-sky-400">
+        <div className="clean-spec-box">
+          <span className="spec-label">Synthesis</span>
+          <span className="spec-value text-sky-400 font-mono">
             {model.duration_seconds}s
           </span>
-          <span className="stat-sub">5-stage pipeline</span>
+          <span className="spec-sub">5-stage pipeline</span>
         </div>
       </div>
 
       {/* PBR Texture Info Tag */}
       {hasPbr && (
-        <div className="pbr-status-box">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-              <span className="text-xs font-semibold text-slate-200">
-                PBR Maps: 1024px Albedo + Normal + Roughness
-              </span>
+        <div className="clean-pbr-box">
+          <div className="clean-pbr-row">
+            <div className="flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-purple-400" />
+              <span className="text-xs font-semibold text-slate-200">1024px PBR Maps</span>
             </div>
             {onOpenTextures && (
               <button
+                type="button"
                 onClick={onOpenTextures}
-                className="text-xs text-purple-400 hover:text-purple-300 font-medium underline flex items-center gap-1"
+                className="clean-inspect-pill"
               >
                 <Layers className="w-3 h-3" />
-                <span>View Maps</span>
+                <span>Inspect</span>
               </button>
             )}
+          </div>
+          <div className="clean-pbr-chips">
+            <span className="pbr-chip">Albedo</span>
+            <span className="pbr-chip">Normal</span>
+            <span className="pbr-chip">Roughness</span>
           </div>
         </div>
       )}
 
-      <div className="stats-footer">
+      {/* Downloads */}
+      <div className="clean-stats-actions">
         <a
           href={`${apiBase}${model.urls.glb}`}
           download={`polygen_${model.model_id}.glb`}
-          className="download-btn btn-primary"
+          className="clean-download-primary"
         >
-          <Download className="w-4 h-4" />
-          <span>Download .GLB (Game-Ready)</span>
+          <Download className="w-3.5 h-3.5" />
+          <span>Export .GLB (Game-Ready)</span>
         </a>
 
         <a
           href={`${apiBase}${model.urls.obj}`}
           download={`polygen_${model.model_id}.obj`}
-          className="download-btn btn-secondary"
+          className="clean-download-secondary"
         >
-          <Download className="w-4 h-4" />
-          <span>Download .OBJ (Raw Mesh)</span>
+          <Box className="w-3.5 h-3.5 text-slate-400" />
+          <span>Export .OBJ (Raw Mesh)</span>
         </a>
       </div>
     </div>
