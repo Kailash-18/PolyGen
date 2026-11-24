@@ -1050,3 +1050,19 @@ def api_configure_tonemapping(payload: Dict[str, Any]):
         "status": "success",
         "postprocessing": manifest
     }
+
+@app.get("/api/v1/environment/presets-catalog")
+def api_get_environment_presets():
+    """Returns catalog of all registered enterprise HDRI environment presets."""
+    presets = hdri_orchestrator.presets.list_presets()
+    return {
+        "status": "success",
+        "count": len(presets),
+        "presets": presets,
+        "supported_tonemappers": [
+            "ACESFilmicToneMapping",
+            "ReinhardToneMapping",
+            "AgXToneMapping",
+            "LinearToneMapping"
+        ]
+    }
