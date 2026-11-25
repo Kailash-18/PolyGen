@@ -14,6 +14,8 @@ export function StatsCard({ model, apiBase, onOpenTextures }: StatsCardProps) {
   if (!model) return null;
 
   const hasPbr = model.textures && Object.keys(model.textures).length > 0;
+  // Clean model ID to strip any week milestone artifacts
+  const cleanId = (model.model_id || '').replace(/^week\d+_?/i, '');
 
   if (isCollapsed) {
     return (
@@ -24,7 +26,7 @@ export function StatsCard({ model, apiBase, onOpenTextures }: StatsCardProps) {
         title="Expand Telemetry Specs"
       >
         <Box className="w-3.5 h-3.5 text-purple-400" />
-        <span className="font-semibold text-xs text-slate-200">#{model.model_id}</span>
+        <span className="font-semibold text-xs text-slate-200">#{cleanId}</span>
         <span className="clean-stats-pill-metric">{model.stats.faces.toLocaleString()} polys</span>
         <ChevronDown className="w-3.5 h-3.5 opacity-60 ml-0.5" />
       </button>
@@ -38,7 +40,7 @@ export function StatsCard({ model, apiBase, onOpenTextures }: StatsCardProps) {
         <div className="clean-stats-header-left">
           <Box className="w-3.5 h-3.5 text-purple-400" />
           <span className="clean-stats-title">Asset Specs</span>
-          <span className="clean-model-chip">#{model.model_id}</span>
+          <span className="clean-model-chip">#{cleanId}</span>
         </div>
         <button
           type="button"

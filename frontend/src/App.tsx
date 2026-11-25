@@ -14,6 +14,7 @@ import { LoginDashboard } from './components/LoginDashboard';
 import { TexturePreviewModal } from './components/TexturePreviewModal';
 import { BomDrawer } from './components/BomDrawer';
 import { ViewportCustomizer } from './components/ViewportCustomizer';
+import { SampleModal, type SampleItem } from './components/SampleModal';
 import type { ModelMetadata, ProgressUpdate, ActiveTab, RenderMode, CameraPreset, ViewportSettings } from './types';
 
 const API_BASE = 'http://localhost:8000';
@@ -52,6 +53,7 @@ function AuthenticatedStudio() {
   // Modals / Drawers
   const [textureModalModel, setTextureModalModel] = useState<ModelMetadata | null>(null);
   const [bomModalModelId, setBomModalModelId] = useState<string | null>(null);
+  const [isSampleModalOpen, setIsSampleModalOpen] = useState(false);
 
   const handleCaptureSnapshot = () => {
     const canvas = document.querySelector('.scene-container canvas') as HTMLCanvasElement;
@@ -273,6 +275,7 @@ function AuthenticatedStudio() {
               setStylePreset={setStylePreset}
               onGenerate={handleGenerate}
               isLoading={isLoading}
+              onOpenSamples={() => setIsSampleModalOpen(true)}
             />
           </section>
         )}
@@ -295,6 +298,18 @@ function AuthenticatedStudio() {
           <AuditView models={modelsList} gpuInfo={gpuInfo} />
         )}
       </main>
+
+      {/* 3D Samples Modal Catalog */}
+      <SampleModal
+        isOpen={isSampleModalOpen}
+        onClose={() => setIsSampleModalOpen(false)}
+        onSelectSample={(sample: SampleItem) => {
+          setPrompt(sample.prompt);
+          setStylePreset(sample.style);
+          setTargetFaces(sample.faces);
+          setIsSampleModalOpen(false);
+        }}
+      />
 
       {textureModalModel && textureModalModel.textures && (
         <TexturePreviewModal
