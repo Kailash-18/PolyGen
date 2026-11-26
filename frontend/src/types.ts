@@ -43,6 +43,7 @@ export interface ProgressUpdate {
 
 export interface UserProfile {
   name: string;
+  displayName?: string;
   email: string;
   role: string;
   plan: string;
@@ -50,7 +51,7 @@ export interface UserProfile {
 }
 
 export type ThemeMode = 'dark' | 'light';
-export type ActiveTab = 'studio' | 'library' | 'audit';
+export type ActiveTab = 'studio' | 'explore' | 'library' | 'audit';
 export type RenderMode = 'pbr' | 'shaded' | 'wireframe';
 export type CameraPreset = 'default' | 'front' | 'top' | 'side' | 'isometric';
 

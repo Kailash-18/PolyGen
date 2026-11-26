@@ -2,11 +2,16 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { UserProfile } from '../types';
 
+const API_BASE = typeof window !== 'undefined'
+  ? `${window.location.protocol}//${window.location.hostname}:8000`
+  : 'http://127.0.0.1:8000';
+
 interface AuthContextType {
   user: UserProfile | null;
   isLoggedIn: boolean;
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, password: string, email: string) => Promise<void>;
+  loginAsGuest: () => void;
   logout: () => void;
   authError: string | null;
   setAuthError: (err: string | null) => void;
@@ -17,6 +22,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
   login: async () => {},
   register: async () => {},
+  loginAsGuest: () => {},
   logout: () => {},
   authError: null,
   setAuthError: () => {}
@@ -47,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (username: string, password: string) => {
     setAuthError(null);
     try {
-      const res = await fetch('http://localhost:8000/api/auth/login', {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
@@ -73,10 +79,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loginAsGuest = () => {
+    setAuthError(null);
+    const guestUser: UserProfile = {
+      name: 'Sri Kailash',
+      email: 'sri.anjaneya.kailash@gmail.com',
+      role: 'Studio Lead',
+      plan: 'Enterprise Pro',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80'
+    };
+    setUser(guestUser);
+  };
+
   const register = async (username: string, password: string, email: string) => {
     setAuthError(null);
     try {
-      const res = await fetch('http://localhost:8000/api/auth/register', {
+      const res = await fetch(`${API_BASE}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password, email })
@@ -115,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoggedIn: !!user,
         login,
         register,
+        loginAsGuest,
         logout,
         authError,
         setAuthError

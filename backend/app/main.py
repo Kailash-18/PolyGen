@@ -48,19 +48,7 @@ if VIEWER_DIR.exists():
 
 @app.get("/")
 async def root():
-    return RedirectResponse(url="/viewer/")
-
-@app.get("/digital")
-async def digital_redirect():
-    return RedirectResponse(url="/viewer/build.html")
-
-@app.get("/build")
-async def build_redirect():
-    return RedirectResponse(url="/viewer/build.html")
-
-@app.get("/physical")
-async def physical_redirect():
-    return RedirectResponse(url="/viewer/")
+    return RedirectResponse(url="http://127.0.0.1:5173/")
 
 SAMPLES_DIR = Path(__file__).resolve().parent.parent / "samples"
 
@@ -229,6 +217,12 @@ async def generate_asset(req: GenerationRequest):
         "duration_seconds": duration,
         "stats": mesh_stats,
         "decimation": decimation_stats,
+        "textures": {
+            "albedo": f"/outputs/{model_id}/albedo.png",
+            "normal": f"/outputs/{model_id}/normal.png",
+            "roughness": f"/outputs/{model_id}/roughness.png",
+            "metalness": f"/outputs/{model_id}/metalness.png"
+        },
         "urls": {
             "glb": export_info["glb_url"],
             "obj": export_info["obj_url"]
@@ -323,6 +317,12 @@ async def websocket_generate(websocket: WebSocket):
             "duration_seconds": duration,
             "stats": mesh_stats,
             "decimation": decimation_stats,
+            "textures": {
+                "albedo": f"/outputs/{model_id}/albedo.png",
+                "normal": f"/outputs/{model_id}/normal.png",
+                "roughness": f"/outputs/{model_id}/roughness.png",
+                "metalness": f"/outputs/{model_id}/metalness.png"
+            },
             "urls": {
                 "glb": export_info["glb_url"],
                 "obj": export_info["obj_url"]

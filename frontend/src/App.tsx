@@ -10,6 +10,7 @@ import { StatsCard } from './components/StatsCard';
 import { CanvasControls } from './components/CanvasControls';
 import { LibraryView } from './components/LibraryView';
 import { AuditView } from './components/AuditView';
+import { ExploreView } from './components/ExploreView';
 import { LoginDashboard } from './components/LoginDashboard';
 import { TexturePreviewModal } from './components/TexturePreviewModal';
 import { BomDrawer } from './components/BomDrawer';
@@ -17,12 +18,17 @@ import { ViewportCustomizer } from './components/ViewportCustomizer';
 import { SampleModal, type SampleItem } from './components/SampleModal';
 import type { ModelMetadata, ProgressUpdate, ActiveTab, RenderMode, CameraPreset, ViewportSettings } from './types';
 
-const API_BASE = 'http://localhost:8000';
-const WS_BASE = 'ws://localhost:8000';
+const API_BASE = typeof window !== 'undefined'
+  ? `${window.location.protocol}//${window.location.hostname}:8000`
+  : 'http://localhost:8000';
+const WS_BASE = typeof window !== 'undefined'
+  ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}:8000`
+  : 'ws://localhost:8000';
 
 function AuthenticatedStudio() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('studio');
   const [prompt, setPrompt] = useState('A rusted medieval broadsword with a glowing blue sapphire in the hilt');
+  const [negativePrompt, setNegativePrompt] = useState('blurry, distorted, holes, non-manifold, low quality');
   const [targetFaces, setTargetFaces] = useState(10000);
   const [stylePreset, setStylePreset] = useState('Realistic PBR');
   const [isLoading, setIsLoading] = useState(false);
@@ -95,10 +101,20 @@ function AuthenticatedStudio() {
       .catch((err) => console.warn('Backend not yet reachable on port 8000:', err));
 
     loadModels();
+
+    const pending = localStorage.getItem('polygen_pending_prompt');
+    if (pending && pending.trim()) {
+      localStorage.removeItem('polygen_pending_prompt');
+      setPrompt(pending.trim());
+      setTimeout(() => {
+        handleGenerate(pending.trim());
+      }, 400);
+    }
   }, []);
 
-  const handleGenerate = () => {
-    if (!prompt.trim() || isLoading) return;
+  const handleGenerate = (customPrompt?: string) => {
+    const activeText = (customPrompt !== undefined ? customPrompt : prompt).trim();
+    if (!activeText || isLoading) return;
 
     setIsLoading(true);
     setProgressData({
@@ -114,7 +130,7 @@ function AuthenticatedStudio() {
 
       ws.onopen = () => {
         ws.send(JSON.stringify({
-          prompt: `${prompt.trim()} (${stylePreset})`,
+          prompt: `${activeText} (${stylePreset})${negativePrompt.trim() ? ` [Negative: ${negativePrompt.trim()}]` : ''}`,
           target_faces: targetFaces,
           detail_level: 'high'
         }));
@@ -136,6 +152,9 @@ function AuthenticatedStudio() {
           setModelsList((prev) => [data.result, ...prev]);
           setIsLoading(false);
           ws.close();
+          setTimeout(() => {
+            setProgressData(null);
+          }, 2500);
         }
       };
 
@@ -162,7 +181,7 @@ function AuthenticatedStudio() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: `${prompt.trim()} (${stylePreset})`,
+          prompt: `${prompt.trim()} (${stylePreset})${negativePrompt.trim() ? ` [Negative: ${negativePrompt.trim()}]` : ''}`,
           target_faces: targetFaces,
           detail_level: 'high'
         })
@@ -181,6 +200,9 @@ function AuthenticatedStudio() {
         message: '3D Asset ready with PBR textures!',
         result: data
       });
+      setTimeout(() => {
+        setProgressData(null);
+      }, 2500);
     } catch (err: any) {
       alert(`Generation failed: ${err.message}`);
     } finally {
@@ -232,6 +254,8 @@ function AuthenticatedStudio() {
               onToggleCustomizer={() => setIsCustomizerOpen((prev) => !prev)}
               isCustomizerOpen={isCustomizerOpen}
               onCaptureSnapshot={handleCaptureSnapshot}
+              cameraPreset={cameraPreset}
+              setCameraPreset={setCameraPreset}
             />
 
             <Scene3D
@@ -276,8 +300,21 @@ function AuthenticatedStudio() {
               onGenerate={handleGenerate}
               isLoading={isLoading}
               onOpenSamples={() => setIsSampleModalOpen(true)}
+              negativePrompt={negativePrompt}
+              setNegativePrompt={setNegativePrompt}
             />
           </section>
+        )}
+
+        {activeTab === 'explore' && (
+          <ExploreView
+            onSelectPrompt={(selectedPrompt, selectedStyle, selectedFaces) => {
+              setPrompt(selectedPrompt);
+              setStylePreset(selectedStyle);
+              setTargetFaces(selectedFaces);
+              setActiveTab('studio');
+            }}
+          />
         )}
 
         {activeTab === 'library' && (

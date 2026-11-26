@@ -1,13 +1,13 @@
+import { useState } from 'react';
 import {
   RotateCw,
   Sun,
-  Image as ImageIcon,
   Layers,
-  FileSpreadsheet,
   Sliders,
-  Camera
+  Camera,
+  ChevronDown
 } from 'lucide-react';
-import type { RenderMode } from '../types';
+import type { RenderMode, CameraPreset } from '../types';
 
 interface CanvasControlsProps {
   renderMode: RenderMode;
@@ -24,6 +24,8 @@ interface CanvasControlsProps {
   onToggleCustomizer: () => void;
   isCustomizerOpen: boolean;
   onCaptureSnapshot: () => void;
+  cameraPreset?: CameraPreset;
+  setCameraPreset?: (p: CameraPreset) => void;
 }
 
 export function CanvasControls({
@@ -33,82 +35,51 @@ export function CanvasControls({
   setAutoRotate,
   lightIntensity,
   setLightIntensity,
-  hasTextures,
-  onOpenTextures,
   explodeProgress,
   setExplodeProgress,
-  onOpenBom,
-  onToggleCustomizer,
-  isCustomizerOpen,
-  onCaptureSnapshot
+  onCaptureSnapshot,
+  cameraPreset = 'default',
+  setCameraPreset
 }: CanvasControlsProps) {
+  const [showSettings, setShowSettings] = useState(false);
+
   return (
-    <div className="clean-studio-dock">
-      {/* 1. Shading Modes Segment */}
-      <div className="dock-segmented">
-        <button
-          type="button"
-          onClick={() => setRenderMode('pbr')}
-          className={`dock-seg-btn ${renderMode === 'pbr' ? 'active' : ''}`}
-          title="Physically Based Textured Shading"
-        >
-          PBR
-        </button>
-        <button
-          type="button"
-          onClick={() => setRenderMode('shaded')}
-          className={`dock-seg-btn ${renderMode === 'shaded' ? 'active' : ''}`}
-          title="Matte Clay Surface"
-        >
-          Clay
-        </button>
-        <button
-          type="button"
-          onClick={() => setRenderMode('wireframe')}
-          className={`dock-seg-btn ${renderMode === 'wireframe' ? 'active' : ''}`}
-          title="Wireframe Mesh Topology"
-        >
-          Wire
-        </button>
+    <div className="viewport-hud-pill-bar">
+      {/* 1. Turntable 360 Rotation Toggle */}
+      <button
+        type="button"
+        onClick={() => setAutoRotate((prev) => !prev)}
+        className={`hud-pill-btn ${autoRotate ? 'active' : ''}`}
+        title="Toggle 360° Turntable Rotation"
+      >
+        <RotateCw className={`w-3.5 h-3.5 ${autoRotate ? 'animate-spin-slow text-cyan-400' : 'text-slate-400'}`} />
+        <span className="hidden sm:inline">Turntable</span>
+        {autoRotate && <span className="hud-badge-dot" />}
+      </button>
+
+      <div className="hud-pill-divider" />
+
+      {/* 2. Shading Mode Switcher (PBR / Clay / Wire) */}
+      <div className="hud-shading-group">
+        {(['pbr', 'shaded', 'wireframe'] as RenderMode[]).map((mode) => (
+          <button
+            key={mode}
+            type="button"
+            onClick={() => setRenderMode(mode)}
+            className={`hud-sub-btn ${renderMode === mode ? 'active' : ''}`}
+            title={`Switch to ${mode.toUpperCase()} Shading`}
+          >
+            {mode === 'pbr' ? 'PBR' : mode === 'shaded' ? 'Clay' : 'Wire'}
+          </button>
+        ))}
       </div>
 
-      <div className="dock-divider" />
+      <div className="hud-pill-divider" />
 
-      {/* 2. Interactive Viewport Tools */}
-      <div className="dock-actions">
-        <button
-          type="button"
-          onClick={() => setAutoRotate((prev) => !prev)}
-          className={`dock-icon-btn ${autoRotate ? 'active' : ''}`}
-          title={autoRotate ? 'Pause Turntable' : 'Start Turntable Rotation'}
-        >
-          <RotateCw className="w-3.5 h-3.5" />
-        </button>
-
-        <button
-          type="button"
-          onClick={onToggleCustomizer}
-          className={`dock-icon-btn ${isCustomizerOpen ? 'active' : ''}`}
-          title="Viewport & Material Studio Controls"
-        >
-          <Sliders className="w-3.5 h-3.5" />
-        </button>
-
-        <button
-          type="button"
-          onClick={onCaptureSnapshot}
-          className="dock-icon-btn"
-          title="Capture High-Res Viewport PNG Snapshot"
-        >
-          <Camera className="w-3.5 h-3.5 text-sky-400" />
-        </button>
-      </div>
-
-      <div className="dock-divider" />
-
-      {/* 3. Kinematic Assembly Explode Slider */}
-      <div className="dock-slider-item" title="Kinematic Exploded View Scrubber">
-        <Layers className="w-3.5 h-3.5 text-cyan-400" />
+      {/* 3. Exploded View Slider */}
+      <div className="hud-explode-container" title="Pull Apart Kinematic 3D Assembly">
+        <Layers className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+        <span className="text-[11px] font-semibold text-slate-300 hidden md:inline">Explode</span>
         <input
           type="range"
           min={0}
@@ -116,55 +87,88 @@ export function CanvasControls({
           step={1}
           value={Math.round(explodeProgress * 100)}
           onChange={(e) => setExplodeProgress(Number(e.target.value) / 100)}
-          className="clean-range-input dock-range"
+          className="hud-slider-input"
         />
-        <span className="dock-slider-label">
+        <span className="text-[10px] font-mono text-purple-300 w-7 text-right">
           {Math.round(explodeProgress * 100)}%
         </span>
       </div>
 
-      <div className="dock-divider" />
+      <div className="hud-pill-divider" />
 
-      {/* 4. Telemetry Drawers & Maps */}
-      <div className="dock-actions">
+      {/* 4. Instant HD Snapshot */}
+      <button
+        type="button"
+        onClick={onCaptureSnapshot}
+        className="hud-pill-btn"
+        title="Capture 4K Transparent Viewport Render"
+      >
+        <Camera className="w-3.5 h-3.5 text-emerald-400" />
+        <span className="hidden md:inline">Snapshot</span>
+      </button>
+
+      {/* 5. Studio Settings Popover (Camera Angles & Lighting) */}
+      <div className="relative">
         <button
           type="button"
-          onClick={onOpenBom}
-          className="dock-text-btn text-emerald-400"
-          title="Component Bill of Materials & Cost Telemetry"
+          onClick={() => setShowSettings((prev) => !prev)}
+          className={`hud-pill-btn ${showSettings ? 'active' : ''}`}
+          title="Camera Angles & Studio Lighting"
         >
-          <FileSpreadsheet className="w-3.5 h-3.5" />
-          <span>BOM</span>
+          <Sliders className="w-3.5 h-3.5 text-indigo-400" />
+          <span className="hidden lg:inline">Camera</span>
+          <ChevronDown className="w-3 h-3 opacity-60" />
         </button>
 
-        {hasTextures && (
-          <button
-            type="button"
-            onClick={onOpenTextures}
-            className="dock-text-btn text-purple-400"
-            title="Inspect 1024px Albedo, Normal & Roughness Maps"
-          >
-            <ImageIcon className="w-3.5 h-3.5" />
-            <span>Maps</span>
-          </button>
+        {showSettings && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setShowSettings(false)} />
+            <div className="hud-settings-dropdown">
+              <div className="text-[10px] font-bold text-slate-400 tracking-wider uppercase mb-2">
+                Camera Angles
+              </div>
+              <div className="grid grid-cols-2 gap-1.5 mb-3">
+                {(['isometric', 'front', 'side', 'top'] as CameraPreset[]).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => {
+                      setCameraPreset && setCameraPreset(p);
+                      setShowSettings(false);
+                    }}
+                    className={`hud-dropdown-btn ${cameraPreset === p ? 'active' : ''}`}
+                  >
+                    {p.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+
+              <div className="hud-dropdown-divider" />
+
+              <div className="flex items-center justify-between text-[11px] font-semibold text-slate-300 mb-1.5 mt-2">
+                <div className="flex items-center gap-1.5">
+                  <Sun className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Studio Lighting</span>
+                </div>
+                <span className="font-mono text-amber-300 text-[10px]">
+                  {lightIntensity.toFixed(1)}x
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0.4}
+                max={2.6}
+                step={0.1}
+                value={lightIntensity}
+                onChange={(e) => setLightIntensity(Number(e.target.value))}
+                className="hud-slider-input w-full"
+              />
+            </div>
+          </>
         )}
-      </div>
-
-      <div className="dock-divider" />
-
-      {/* 5. Lighting Intensity Slider */}
-      <div className="dock-slider-item" title="Studio Lighting Intensity">
-        <Sun className="w-3.5 h-3.5 text-amber-400" />
-        <input
-          type="range"
-          min={0.3}
-          max={2.5}
-          step={0.1}
-          value={lightIntensity}
-          onChange={(e) => setLightIntensity(Number(e.target.value))}
-          className="clean-range-input dock-range"
-        />
       </div>
     </div>
   );
 }
+
+export default CanvasControls;

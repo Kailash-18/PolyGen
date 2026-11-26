@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import {
-  ArrowUp,
-  Maximize2,
-  Minimize2,
+  Sparkles,
   Layers,
-  Wand2
+  ArrowUp,
+  Cpu,
+  Dices,
+  SlidersHorizontal,
+  ChevronDown,
+  ChevronUp,
+  ShieldAlert
 } from 'lucide-react';
 
 interface PromptBarProps {
@@ -17,10 +21,42 @@ interface PromptBarProps {
   onGenerate: () => void;
   isLoading: boolean;
   onOpenSamples: () => void;
+  negativePrompt?: string;
+  setNegativePrompt?: (np: string) => void;
 }
 
-const STYLES = ['Realistic PBR', 'Stylized Game', 'Sci-Fi Cyber', 'Antique', 'Low Poly CAD'];
+const STYLES = ['Realistic PBR', 'Sci-Fi Cyber', 'Stylized Fantasy', 'Antique Bronze', 'Low Poly CAD'];
 const POLY_PRESETS = [5000, 10000, 25000];
+
+const SURPRISE_PROMPTS = [
+  'A sleek aerodynamic futuristic sports car with glowing neon cyan rims, carbon fiber diffusers, and aggressive front splitters',
+  'A masterwork folded Damascus steel broadsword with gold inlay runic engravings and a sapphire pommel',
+  'A deep-space exploratory starfighter with swept delta wings, dual plasma ion thrusters, and matte stealth cockpit canopy',
+  'A heavy bipedal combat mech with shoulder missile pods, reinforced knee actuators, and dual rotary plasma miniguns',
+  'A cluster of glowing prismatic quartz mana crystals on dark basalt bedrock with ethereal violet bioluminescence',
+  'A bearded Viking battleaxe with carved Nordic elder Futhark runes, bronze collar, and cross-stitched leather haft',
+  'An ornate pirate treasure chest with wrought-iron banding, carved oak staves, and brass lion-head lock plate',
+  'A teardrop alchemical potion flask with glowing ruby healing elixir and filigree brass cage',
+  'An ancient Greek terracotta amphora vase with fluted neck and mythological warrior meander frieze',
+  'A tactical reconnaissance drone with folding carbon-fiber arms and spherical optical sensor dome',
+  'A futuristic pulse plasma rifle with glowing cyan heat sinks, top holo-sight, and textured grip',
+  'A dwarven war hammer with dual-sided steel striking faces and rune-chiseled granite core',
+  'A cybernetic samurai helmet with glowing crimson visor and gold-plated crest ornament',
+  'A floating miniature bonsai tree on a chunk of mossy levitating bedrock with exposed roots',
+  'A glowing quantum power core with magnetic levitation stabilizer rings and copper induction coils'
+];
+
+const SUGGESTIONS = [
+  { label: '🏎️ Sports Car', prompt: 'A sleek aerodynamic futuristic sports car with glowing neon rims' },
+  { label: '⚔️ Katana', prompt: 'A Japanese katana with folded Damascus steel blade and golden dragon tsuba' },
+  { label: '🚀 Starfighter', prompt: 'A sci-fi starfighter spaceship with swept delta wings and dual plasma thrusters' },
+  { label: '🤖 Combat Mech', prompt: 'A heavy bipedal combat mech with shoulder missile pods and rotary miniguns' },
+  { label: '💎 Mana Crystal', prompt: 'A cluster of glowing prismatic quartz mana crystals on dark bedrock' },
+  { label: '🪓 Viking Axe', prompt: 'A bearded Viking battleaxe with carved Nordic runes and leather wrapped haft' },
+  { label: '📦 Treasure Chest', prompt: 'An ornate pirate treasure chest with gold bindings and brass lock plate' },
+  { label: '🧪 Health Potion', prompt: 'A magical glass flask with glowing crimson healing elixir and wooden cork' },
+  { label: '🏺 Greek Amphora', prompt: 'An ancient Greek terracotta amphora vase with fluted belly and dual handles' },
+];
 
 export function PromptBar({
   prompt,
@@ -31,226 +67,210 @@ export function PromptBar({
   setStylePreset,
   onGenerate,
   isLoading,
-  onOpenSamples
+  onOpenSamples,
+  negativePrompt = 'blurry, distorted, holes, non-manifold, low quality',
+  setNegativePrompt
 }: PromptBarProps) {
-  // Start in big Hero prompt mode when opening, transition to iOS style once typing or generating
-  const [isHeroMode, setIsHeroMode] = useState<boolean>(true);
-  const [hasInteracted, setHasInteracted] = useState<boolean>(false);
-
-  // Transition to iOS dock mode when user types or generates
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setPrompt(e.target.value);
-    if (!hasInteracted && e.target.value.trim().length > 0) {
-      setHasInteracted(true);
-      // smoothly transition to iOS dock mode once user begins entering their custom vision
-      setIsHeroMode(false);
-    }
-  };
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (!isLoading && prompt.trim()) {
-        setIsHeroMode(false);
         onGenerate();
       }
     }
   };
 
-  // --------------------------------------------------------------------------
-  // MODE 1: BIG HERO PROMPT BOX ("What do you want to build?")
-  // --------------------------------------------------------------------------
-  if (isHeroMode) {
-    return (
-      <div className="hero-prompt-overlay">
-        <div className="hero-prompt-card">
-          <div className="hero-prompt-header">
-            <div className="flex items-center gap-2">
-              <div className="hero-prompt-icon-badge">
-                <Wand2 className="w-4 h-4 text-purple-400" />
-              </div>
-              <div>
-                <h2 className="hero-prompt-title">What do you want to build?</h2>
-                <p className="hero-prompt-sub">
-                  Describe any 3D asset and PolyGen will synthesize manifold geometry with full PBR textures
-                </p>
-              </div>
-            </div>
+  const handleSurpriseMe = () => {
+    const randomPrompt = SURPRISE_PROMPTS[Math.floor(Math.random() * SURPRISE_PROMPTS.length)];
+    setPrompt(randomPrompt);
+  };
 
-            <button
-              type="button"
-              onClick={() => setIsHeroMode(false)}
-              className="hero-dock-toggle-btn"
-              title="Dock to iOS bar at bottom"
-            >
-              <Minimize2 className="w-3.5 h-3.5" />
-              <span>Dock to bottom</span>
-            </button>
-          </div>
+  const handleEnhancePrompt = () => {
+    if (!prompt.trim()) {
+      handleSurpriseMe();
+      return;
+    }
+    setIsEnhancing(true);
 
-          {/* Big Input Area */}
-          <div className="hero-prompt-input-wrapper">
-            <textarea
-              value={prompt}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              placeholder="Describe what you want to build (e.g. 'A rusted medieval broadsword with a glowing blue sapphire in the hilt')..."
-              rows={3}
-              className="hero-prompt-textarea"
-              disabled={isLoading}
-              autoFocus
-            />
-          </div>
+    // AI Prompt Expansion Logic: enriches keywords with high-end generative 3D modifiers
+    const p = prompt.trim();
+    let enhanced = p;
 
-          {/* Controls & Action Row */}
-          <div className="hero-prompt-footer">
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Dedicated Separate Samples Button */}
-              <button
-                type="button"
-                onClick={onOpenSamples}
-                className="hero-samples-pill-btn"
-                title="Browse Pre-Engineered 3D Samples"
-              >
-                <Layers className="w-3.5 h-3.5 text-purple-400" />
-                <span>Samples Catalog</span>
-              </button>
+    if (!/pbr|photorealistic|detailed|4k|8k|textured|finish/i.test(p)) {
+      if (stylePreset === 'Realistic PBR') {
+        enhanced += ', masterwork photorealistic 8k PBR materials, micro-surface imperfections, bevels';
+      } else if (stylePreset === 'Sci-Fi Cyber') {
+        enhanced += ', high-tech cybernetic panels, emissive neon accent glow, matte carbon fiber texture';
+      } else if (stylePreset === 'Stylized Fantasy') {
+        enhanced += ', vibrant hand-painted RPG fantasy style, clean game-ready topology, sharp silhouette';
+      } else if (stylePreset === 'Antique Bronze') {
+        enhanced += ', weathered bronze patina, oxidized verdigris accents, antique museum finish';
+      } else {
+        enhanced += ', clean manifold CAD geometry, optimal bevel highlights, crisp geometric definition';
+      }
+    }
 
-              {/* Style selector */}
-              <select
-                value={stylePreset}
-                onChange={(e) => setStylePreset(e.target.value)}
-                disabled={isLoading}
-                className="clean-select-pill"
-                title="Texture Style Preset"
-              >
-                {STYLES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
+    setTimeout(() => {
+      setPrompt(enhanced);
+      setIsEnhancing(false);
+    }, 280);
+  };
 
-              {/* Polycount target */}
-              <select
-                value={targetFaces}
-                onChange={(e) => setTargetFaces(Number(e.target.value))}
-                disabled={isLoading}
-                className="clean-select-pill font-mono"
-                title="Target Polygon Density"
-              >
-                {POLY_PRESETS.map((n) => (
-                  <option key={n} value={n}>{(n / 1000)}k polygons</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Synthesize Button */}
-            <button
-              type="button"
-              onClick={() => {
-                setIsHeroMode(false);
-                onGenerate();
-              }}
-              disabled={isLoading || !prompt.trim()}
-              className="hero-generate-action-btn"
-            >
-              {isLoading ? (
-                <div className="flex items-center gap-2">
-                  <div className="clean-spinner" />
-                  <span>Synthesizing...</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span>Synthesize 3D</span>
-                  <ArrowUp className="w-3.5 h-3.5" />
-                </div>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // --------------------------------------------------------------------------
-  // MODE 2: SLEEK iOS-STYLE BOTTOM DYNAMIC CAPSULE
-  // --------------------------------------------------------------------------
   return (
-    <div className="ios-prompt-dock-wrapper">
-      <div className="ios-prompt-capsule">
-        {/* Dedicated Separate Samples Button */}
+    <div className="studio-prompt-container">
+      {/* Quick Suggestion Chips Row with AI Enhance & Surprise Me */}
+      <div className="prompt-suggestions-row">
+        <button
+          type="button"
+          onClick={handleSurpriseMe}
+          className="suggestion-chip special-btn"
+          title="Pick a random high-detail prompt"
+          disabled={isLoading}
+        >
+          <Dices className="w-3.5 h-3.5 text-amber-400" />
+          <span>Surprise Me</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={handleEnhancePrompt}
+          className="suggestion-chip special-btn"
+          title="AI Prompt Enhancer: Enriches prompt with materials, lighting & micro-details"
+          disabled={isLoading || isEnhancing}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+          <span>{isEnhancing ? 'Enhancing...' : 'AI Enhance'}</span>
+        </button>
+
+        <div className="suggestion-divider" />
+
+        {SUGGESTIONS.map((item) => (
+          <button
+            key={item.label}
+            type="button"
+            className="suggestion-chip"
+            onClick={() => setPrompt(item.prompt)}
+            disabled={isLoading}
+            title={item.prompt}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Advanced Negative Prompt Drawer */}
+      {showAdvanced && (
+        <div className="prompt-advanced-drawer">
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-300">
+            <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
+            <span>Negative Prompt:</span>
+          </div>
+          <input
+            type="text"
+            value={negativePrompt}
+            onChange={(e) => setNegativePrompt && setNegativePrompt(e.target.value)}
+            placeholder="Features to avoid (e.g. 'blurry, holes, distorted, bad topology')..."
+            className="advanced-negative-input"
+          />
+          <span className="text-[10px] text-slate-400 font-mono">Watertight 3D Geometry Filter Active</span>
+        </div>
+      )}
+
+      {/* Main Glassmorphic Studio Prompt Dock */}
+      <div className="studio-prompt-dock">
+        {/* Left: Samples Catalog Button */}
         <button
           type="button"
           onClick={onOpenSamples}
-          className="ios-samples-btn"
-          title="Browse 3D Samples Catalog"
+          className="dock-samples-btn"
+          title="Browse Curated 3D Model Prompt Catalog"
         >
-          <Layers className="w-3.5 h-3.5 text-purple-400" />
-          <span className="hidden sm:inline">Samples</span>
+          <Layers className="w-4 h-4 text-indigo-400" />
+          <span className="hidden md:inline">Catalog</span>
         </button>
 
-        <div className="ios-dock-divider" />
+        <div className="dock-v-divider" />
 
-        {/* Input */}
-        <input
-          type="text"
-          value={prompt}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          placeholder="What do you want to build? (Type to describe 3D asset)..."
-          className="ios-prompt-input"
-          disabled={isLoading}
-        />
+        {/* Center: Sparkle + Input Box */}
+        <div className="prompt-input-area">
+          <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
+          <input
+            type="text"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Describe any 3D asset (e.g. 'Futuristic cyber car', 'Damascus katana', 'Glowing crystal')..."
+            className="prompt-main-input"
+            disabled={isLoading}
+          />
+        </div>
 
-        {/* Style selector */}
-        <select
-          value={stylePreset}
-          onChange={(e) => setStylePreset(e.target.value)}
-          disabled={isLoading}
-          className="ios-select-chip"
-          title="Style"
-        >
-          {STYLES.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
-
-        {/* Polycount */}
-        <select
-          value={targetFaces}
-          onChange={(e) => setTargetFaces(Number(e.target.value))}
-          disabled={isLoading}
-          className="ios-select-chip font-mono"
-          title="Polycount Target"
-        >
-          {POLY_PRESETS.map((n) => (
-            <option key={n} value={n}>{(n / 1000)}k</option>
-          ))}
-        </select>
-
-        {/* Expand back to big Hero box */}
+        {/* Advanced Toggle Button */}
         <button
           type="button"
-          onClick={() => setIsHeroMode(true)}
-          className="ios-expand-icon-btn"
-          title="Expand to big prompt card"
+          onClick={() => setShowAdvanced((prev) => !prev)}
+          className={`dock-advanced-toggle ${showAdvanced ? 'active' : ''}`}
+          title="Toggle Negative Prompt & Advanced Generation Options"
         >
-          <Maximize2 className="w-3.5 h-3.5" />
-        </button>
-
-        {/* Circular iOS Send Button */}
-        <button
-          type="button"
-          onClick={onGenerate}
-          disabled={isLoading || !prompt.trim()}
-          className={`ios-send-button ${prompt.trim() ? 'active' : ''}`}
-          title="Generate 3D Asset (Enter)"
-        >
-          {isLoading ? (
-            <div className="ios-send-spinner" />
+          <SlidersHorizontal className="w-3.5 h-3.5" />
+          {showAdvanced ? (
+            <ChevronDown className="w-3 h-3 opacity-70" />
           ) : (
-            <ArrowUp className="w-4 h-4 text-white stroke-[2.5]" />
+            <ChevronUp className="w-3 h-3 opacity-70" />
           )}
         </button>
+
+        {/* Right Controls: Style & Polycount */}
+        <div className="dock-selectors-group">
+          {/* Style Selector */}
+          <select
+            value={stylePreset}
+            onChange={(e) => setStylePreset(e.target.value)}
+            disabled={isLoading}
+            className="dock-select-chip"
+            title="PBR Texture Shader Style"
+          >
+            {STYLES.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+
+          {/* Polycount Selector */}
+          <div className="polycount-chip" title="Target Polygon Density">
+            <Cpu className="w-3 h-3 text-cyan-400 shrink-0" />
+            <select
+              value={targetFaces}
+              onChange={(e) => setTargetFaces(Number(e.target.value))}
+              disabled={isLoading}
+              className="dock-select-chip font-mono"
+            >
+              {POLY_PRESETS.map((n) => (
+                <option key={n} value={n}>{(n / 1000)}k polys</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Primary Action Button: Synthesize */}
+          <button
+            type="button"
+            onClick={onGenerate}
+            disabled={isLoading || !prompt.trim()}
+            className={`dock-generate-btn ${prompt.trim() ? 'active' : ''}`}
+            title="Synthesize 3D Model from Text (Press Enter)"
+          >
+            {isLoading ? (
+              <div className="dock-btn-spinner" />
+            ) : (
+              <>
+                <span className="font-semibold text-xs tracking-wide">Generate 3D</span>
+                <ArrowUp className="w-3.5 h-3.5 stroke-[2.5]" />
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

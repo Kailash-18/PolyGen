@@ -1,15 +1,14 @@
 import { useState } from 'react';
 import {
-  Box,
   Sun,
   Moon,
   FolderOpen,
   ShieldCheck,
-  LogOut,
   ExternalLink,
   Code2,
-  ChevronDown,
-  Layers
+  Wand2,
+  Flame,
+  LogOut
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -30,37 +29,54 @@ export function Navbar({ activeTab, setActiveTab, gpuInfo }: NavbarProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   return (
-    <header className="clean-navbar">
-      {/* Brand Left */}
-      <div className="clean-nav-brand" onClick={() => setActiveTab('studio')}>
-        <div className="clean-nav-logo">
-          <Box className="w-3.5 h-3.5 text-purple-400" />
+    <header className="clean-navbar vre-nav">
+      {/* Brand Left with signature Hacks logo */}
+      <div className="clean-nav-brand cursor-pointer" onClick={() => setActiveTab('studio')}>
+        <svg className="vre-mark w-7 h-7" viewBox="0 0 32 32" aria-hidden="true">
+          <path className="m3" d="M16 20.5 27 25.5 16 30.5 5 25.5Z" fill="#8b7bff" fillOpacity=".85" />
+          <path className="m2" d="M16 11.5 27 16.5 16 21.5 5 16.5Z" fill="#4f8cff" fillOpacity=".9" />
+          <path className="m1" d="M16 2.5 27 7.5 16 12.5 5 7.5Z" fill="#5ee6ff" />
+        </svg>
+        <div className="clean-brand-text">
+          <span className="clean-nav-title">PolyGen 3D</span>
+          <span className="clean-brand-sub">Text-to-3D AI Studio</span>
         </div>
-        <span className="clean-nav-title">PolyGen</span>
         <div
           className="clean-engine-status"
-          title={gpuInfo?.cuda_available ? `CUDA Active: ${gpuInfo.device_name}` : 'Hybrid 3D Pipeline Ready'}
+          title={gpuInfo?.cuda_available ? `CUDA Active: ${gpuInfo.device_name}` : '3D Kinematics AI Engine Active'}
         >
           <span className="status-dot-pulse" />
-          <span>{gpuInfo?.cuda_available ? 'CUDA' : 'Ready'}</span>
+          <span>{gpuInfo?.cuda_available ? 'CUDA' : '3D LIVE'}</span>
         </div>
       </div>
 
-      {/* Navigation Tabs Center */}
-      <nav className="clean-nav-tabs">
+      {/* Laser-Optimized Text-to-3D Navigation Switcher */}
+      <nav className="lab-switch" data-on={activeTab} aria-label="Text-to-3D Navigation">
         <button
           type="button"
           onClick={() => setActiveTab('studio')}
-          className={`clean-nav-tab ${activeTab === 'studio' ? 'active' : ''}`}
+          className={`lab-switch-item ${activeTab === 'studio' ? 'active' : ''}`}
+          title="Generative Text-to-3D Studio"
         >
-          <Box className="w-3.5 h-3.5" />
-          <span>Studio</span>
+          <Wand2 className="w-3.5 h-3.5" />
+          <span>Text-to-3D</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('explore')}
+          className={`lab-switch-item ${activeTab === 'explore' ? 'active' : ''}`}
+          title="Explore Curated 3D Prompts & Inspirations"
+        >
+          <Flame className="w-3.5 h-3.5" />
+          <span>Explore</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('library')}
-          className={`clean-nav-tab ${activeTab === 'library' ? 'active' : ''}`}
+          className={`lab-switch-item ${activeTab === 'library' ? 'active' : ''}`}
+          title="My Generated 3D Asset Library"
         >
           <FolderOpen className="w-3.5 h-3.5" />
           <span>Library</span>
@@ -69,10 +85,11 @@ export function Navbar({ activeTab, setActiveTab, gpuInfo }: NavbarProps) {
         <button
           type="button"
           onClick={() => setActiveTab('audit')}
-          className={`clean-nav-tab ${activeTab === 'audit' ? 'active' : ''}`}
+          className={`lab-switch-item ${activeTab === 'audit' ? 'active' : ''}`}
+          title="AI Pipeline Latency & Telemetry"
         >
           <ShieldCheck className="w-3.5 h-3.5" />
-          <span>Audit</span>
+          <span>Telemetry</span>
         </button>
       </nav>
 
@@ -98,72 +115,77 @@ export function Navbar({ activeTab, setActiveTab, gpuInfo }: NavbarProps) {
           target="_blank"
           rel="noreferrer"
           className="clean-action-btn"
-          title="GitHub Repository"
+          title="View PolyGen Source Repository on GitHub"
         >
-          <Code2 className="w-3.5 h-3.5 text-slate-400" />
+          <Code2 className="w-3.5 h-3.5 text-slate-300" />
         </a>
 
-        {/* User Profile Pill */}
-        <div className="relative">
+        {/* Sign Out / Go to Login Page */}
+        <button
+          type="button"
+          onClick={logout}
+          className="clean-action-btn text-slate-300 hover:text-red-400"
+          title="Sign Out / Switch to Login Page"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+        </button>
+
+        {/* Profile Avatar / Menu */}
+        <div className="profile-menu-container">
           <button
             type="button"
             onClick={() => setShowProfileMenu((prev) => !prev)}
-            className="clean-user-pill"
+            className="user-profile-badge"
+            title="Studio Developer Profile"
           >
-            <span className="clean-user-avatar">
-              {user?.name ? user.name[0].toUpperCase() : 'K'}
+            <div className="profile-avatar">
+              <span>{(user?.name || user?.displayName) ? (user.name || user.displayName)![0] : 'K'}</span>
+            </div>
+            <span className="profile-name hidden sm:inline">
+              {user?.name || user?.displayName || 'Kailash'}
             </span>
-            <span className="clean-user-name">{user?.name || 'Sri Kailash'}</span>
-            <ChevronDown className="w-3 h-3 text-slate-400" />
           </button>
 
           {showProfileMenu && (
-            <div className="clean-dropdown-menu">
-              <div className="dropdown-user-info">
-                <span className="font-semibold text-xs text-slate-200">
-                  {user?.name || 'Sri Kailash'}
-                </span>
-                <span className="text-[11px] text-slate-400">
-                  {user?.role || 'Studio Lead'} · {user?.email || 'sri.anjaneya.kailash@gmail.com'}
-                </span>
+            <>
+              <div
+                className="fixed inset-0 z-40 bg-transparent"
+                onClick={() => setShowProfileMenu(false)}
+              />
+              <div className="profile-dropdown-card">
+                <div className="profile-dropdown-header">
+                  <span className="font-semibold text-xs text-slate-100">
+                    {user?.name || user?.displayName || 'Kailash'}
+                  </span>
+                  <span className="text-[10px] text-slate-400">{user?.email || 'admin@polygen.ai'}</span>
+                  <span className="role-tag mt-1 text-[9px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded w-max">
+                    {user?.role || 'Lead 3D Architect'}
+                  </span>
+                </div>
+                <div className="profile-dropdown-divider" />
+                <a
+                  href="https://github.com/Kailash-18/hacks"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="profile-dropdown-item"
+                >
+                  <ExternalLink className="w-3 h-3 text-indigo-400" />
+                  <span>Teardown AI Repo</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="profile-dropdown-item text-red-400 hover:text-red-300"
+                >
+                  <span>Sign Out</span>
+                </button>
               </div>
-              <div className="dropdown-divider" />
-              <a
-                href="/viewer/"
-                target="_blank"
-                rel="noreferrer"
-                className="dropdown-item-link"
-              >
-                <Layers className="w-3.5 h-3.5 text-slate-400" />
-                <span>Physical Assembly Lab</span>
-                <ExternalLink className="w-3 h-3 opacity-40 ml-auto" />
-              </a>
-              <a
-                href="/viewer/build.html"
-                target="_blank"
-                rel="noreferrer"
-                className="dropdown-item-link"
-              >
-                <Box className="w-3.5 h-3.5 text-slate-400" />
-                <span>Digital Engineering Lab</span>
-                <ExternalLink className="w-3 h-3 opacity-40 ml-auto" />
-              </a>
-              <div className="dropdown-divider" />
-              <button
-                type="button"
-                onClick={() => {
-                  setShowProfileMenu(false);
-                  logout();
-                }}
-                className="dropdown-logout-btn"
-              >
-                <LogOut className="w-3.5 h-3.5 text-rose-400" />
-                <span>Sign Out</span>
-              </button>
-            </div>
+            </>
           )}
         </div>
       </div>
     </header>
   );
 }
+
+export default Navbar;

@@ -1,35 +1,65 @@
 import React, { useState } from 'react';
 import {
-  Box,
-  Lock,
-  User,
-  Mail,
+  Sparkles,
   ArrowRight,
   Sun,
   Moon,
-  ShieldCheck,
   Code2,
-  ExternalLink,
-  Layers,
+  Lock,
+  User,
+  Mail,
   Zap,
-  FileCode,
-  Sparkles
+  ShieldCheck,
+  ChevronDown,
+  Box,
+  Layers
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { SAMPLE_CATALOG } from './SampleModal';
+import { Login3DScene } from '../canvas/Login3DScene';
+
+const MODEL_PRESETS = [
+  { id: 'core', label: 'Quantum Core', icon: '⚛️' },
+  { id: 'car', label: 'Cyber Car', icon: '🏎️' },
+  { id: 'mech', label: 'Titan Mech', icon: '🤖' },
+  { id: 'blade', label: 'Plasma Blade', icon: '⚔️' },
+  { id: 'vase', label: 'Sacred Urn', icon: '🏺' }
+];
+
+const SUGGESTED_PROMPTS = [
+  'A round wooden dining table with four carved legs',
+  'A medieval castle tower with stone battlements',
+  'A cybernetic robotic arm with gripper claw',
+  'An ancient pirate rum barrel with iron rings',
+  'A high-tech sci-fi plasma cannon turret'
+];
 
 export function LoginDashboard() {
-  const { login, register, authError, setAuthError } = useAuth();
+  const { login, register, loginAsGuest, authError, setAuthError } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
+  const [activeModel, setActiveModel] = useState<string>('core');
+  const [promptInput, setPromptInput] = useState<string>('A round wooden dining table with four carved legs');
+  const [showAuthForm, setShowAuthForm] = useState<boolean>(false);
   const [isRegister, setIsRegister] = useState(false);
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('admin');
   const [email, setEmail] = useState('sri.anjaneya.kailash@gmail.com');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLaunchWithPrompt = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (promptInput.trim()) {
+      localStorage.setItem('polygen_pending_prompt', promptInput.trim());
+    }
+    loginAsGuest();
+  };
+
+  const handleSelectSuggestion = (p: string) => {
+    setPromptInput(p);
+  };
+
+  const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password.trim()) {
       setAuthError('Please enter valid credentials');
@@ -51,47 +81,55 @@ export function LoginDashboard() {
   };
 
   return (
-    <div className="login-showcase-page">
-      {/* Background Ambient Orbs */}
-      <div className="ambient-glow-orb ambient-orb-1" />
-      <div className="ambient-glow-orb ambient-orb-2" />
+    <div className="login-3d-universe">
+      {/* Living Interactive 3D WebGL Scene */}
+      <Login3DScene activeModel={activeModel} />
 
-      {/* Top Header */}
-      <header className="login-top-nav">
-        <div className="nav-brand">
-          <div className="nav-logo-box">
-            <Box className="w-4 h-4 text-slate-200" />
+      {/* Top Floating Glass Header */}
+      <header className="login-floating-nav">
+        <div className="nav-brand-capsule">
+          <svg className="vre-mark w-7 h-7 flex-shrink-0" viewBox="0 0 32 32" aria-hidden="true">
+            <path className="m3" d="M16 20.5 27 25.5 16 30.5 5 25.5Z" fill="#8b7bff" fillOpacity=".85" />
+            <path className="m2" d="M16 11.5 27 16.5 16 21.5 5 16.5Z" fill="#4f8cff" fillOpacity=".9" />
+            <path className="m1" d="M16 2.5 27 7.5 16 12.5 5 7.5Z" fill="#5ee6ff" />
+          </svg>
+          <div className="nav-brand-text">
+            <span className="nav-brand-title">PolyGen 3D</span>
+            <span className="nav-brand-subtitle">Text-to-3D AI Studio</span>
           </div>
-          <span className="nav-title">PolyGen</span>
-          <span className="nav-tagline">3D Asset Studio</span>
         </div>
 
-        <div className="nav-right-items">
-          <a
-            href="/viewer/"
-            target="_blank"
-            rel="noreferrer"
-            className="nav-ghost-link"
-            title="Physical 3D Assembly Lab"
-          >
-            <span>Physical Lab</span>
-            <ExternalLink className="w-3 h-3 opacity-40" />
-          </a>
+        {/* 3D Model Switcher Pills */}
+        <div className="model-switcher-bar">
+          {MODEL_PRESETS.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => setActiveModel(m.id)}
+              className={`model-pill-btn ${activeModel === m.id ? 'active' : ''}`}
+            >
+              <span>{m.icon}</span>
+              <span className="hidden sm:inline">{m.label}</span>
+            </button>
+          ))}
+        </div>
 
-          <a
-            href="/viewer/build.html"
-            target="_blank"
-            rel="noreferrer"
-            className="nav-ghost-link"
-            title="Digital Engineering Lab"
+        {/* Right Action Icons */}
+        <div className="nav-right-actions">
+          <button
+            type="button"
+            onClick={loginAsGuest}
+            className="nav-quick-launch-btn"
+            title="Instant 3D Studio Access"
           >
-            <span>Digital Lab</span>
-            <ExternalLink className="w-3 h-3 opacity-40" />
-          </a>
+            <Sparkles className="w-3.5 h-3.5 text-cyan-300" />
+            <span>Launch Studio</span>
+            <ArrowRight className="w-3.5 h-3.5 text-cyan-300" />
+          </button>
 
           <button
             onClick={toggleTheme}
-            className="nav-icon-btn"
+            className="nav-glass-icon-btn"
             title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
             type="button"
           >
@@ -106,7 +144,7 @@ export function LoginDashboard() {
             href="https://github.com/Kailash-18/PolyGen"
             target="_blank"
             rel="noreferrer"
-            className="nav-icon-btn"
+            className="nav-glass-icon-btn"
             title="GitHub Repository"
           >
             <Code2 className="w-3.5 h-3.5 text-slate-400" />
@@ -114,290 +152,196 @@ export function LoginDashboard() {
         </div>
       </header>
 
-      {/* Main Split Showcase Container */}
-      <main className="login-split-layout">
-        {/* Left Side: Product Greatness & Why to Use PolyGen */}
-        <section className="login-hero-showcase">
-          <div className="hero-pill-badge">
-            <span className="hero-pulse-dot" />
-            <span>Generative 3D Asset Pipeline</span>
+      {/* Floating 3D Interaction Hint */}
+      <div className="viewport-drag-hint">
+        <span className="drag-hint-pulse" />
+        <span>🖱️ Drag to rotate 3D asset</span>
+      </div>
+
+      {/* Hero Glass Studio HUD */}
+      <div className="login-hud-overlay">
+        <div className="login-hud-card">
+          <div className="hud-badge">
+            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Pure Generative Text-to-3D AI</span>
           </div>
 
-          <h1 className="hero-headline">
-            Turn natural language into game-ready 3D assets in seconds.
+          <h1 className="hud-headline">
+            Turn Words Into Game-Ready 3D Models
           </h1>
 
-          <p className="hero-lead">
-            PolyGen synthesizes watertight 3D geometry, automatically maps 1024px PBR textures, 
-            and optimizes topology using Quadric Error Metrics for direct import into Unreal Engine 5, 
-            Unity, and Blender.
+          <p className="hud-lead">
+            Synthesize watertight manifold geometry, bake 1024px PBR textures, and optimize topology in seconds. Direct binary GLB export for Unreal Engine 5, Unity, and Blender.
           </p>
 
-          {/* 4 Core Pillars: Clean Monochrome / Subtle Slate */}
-          <div className="hero-pillars-grid">
-            <div className="pillar-card">
-              <div className="pillar-icon-box">
-                <Box className="w-4 h-4 text-slate-200" />
-              </div>
-              <div className="pillar-text">
-                <h3 className="pillar-title">Manifold 3D Geometry</h3>
-                <p className="pillar-desc">
-                  Generates recognizable, watertight meshes (weapons, props, vases, furniture) with clean manifold topology.
-                </p>
-              </div>
-            </div>
-
-            <div className="pillar-card">
-              <div className="pillar-icon-box">
-                <Layers className="w-4 h-4 text-slate-200" />
-              </div>
-              <div className="pillar-text">
-                <h3 className="pillar-title">Automated PBR Texture Maps</h3>
-                <p className="pillar-desc">
-                  Conformal UV unwrapping with 1024px Albedo, Normal, and Roughness maps baked directly into binary GLB.
-                </p>
-              </div>
-            </div>
-
-            <div className="pillar-card">
-              <div className="pillar-icon-box">
-                <Zap className="w-4 h-4 text-slate-200" />
-              </div>
-              <div className="pillar-text">
-                <h3 className="pillar-title">QEM Topology Optimization</h3>
-                <p className="pillar-desc">
-                  Intelligently downsamples 500k-polygon geometry to game targets (~10k) while preserving sharp contours.
-                </p>
-              </div>
-            </div>
-
-            <div className="pillar-card">
-              <div className="pillar-icon-box">
-                <FileCode className="w-4 h-4 text-slate-200" />
-              </div>
-              <div className="pillar-text">
-                <h3 className="pillar-title">Studio Viewport & Kinematics</h3>
-                <p className="pillar-desc">
-                  Interactive Three.js studio with clay shading, wireframe mesh inspect, CAD camera angles, and exploded view.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Clean Telemetry Strip */}
-          <div className="hero-stats-row">
-            <div className="hero-stat-item">
-              <span className="hero-stat-value">&lt; 1.0s</span>
-              <span className="hero-stat-label">Inference Latency</span>
-            </div>
-            <div className="hero-stat-divider" />
-            <div className="hero-stat-item">
-              <span className="hero-stat-value">10k</span>
-              <span className="hero-stat-label">Target Polycount</span>
-            </div>
-            <div className="hero-stat-divider" />
-            <div className="hero-stat-item">
-              <span className="hero-stat-value">100%</span>
-              <span className="hero-stat-label">Watertight Manifold</span>
-            </div>
-            <div className="hero-stat-divider" />
-            <div className="hero-stat-item">
-              <span className="hero-stat-value">3 Maps</span>
-              <span className="hero-stat-label">PBR Textures</span>
-            </div>
-          </div>
-        </section>
-
-        {/* Right Side: Clean Auth Card (No Demo Buttons) */}
-        <section className="login-auth-pane">
-          <div className="login-auth-card">
-            {/* Header */}
-            <div className="auth-card-top">
-              <h2 className="auth-card-title">
-                {isRegister ? 'Create Account' : 'Sign In'}
-              </h2>
-              <p className="auth-card-sub">
-                {isRegister
-                  ? 'Join PolyGen to synthesize and inspect 3D assets'
-                  : 'Enter your credentials to launch the 3D studio'}
-              </p>
-            </div>
-
-            {/* Segmented Sign In / Register Tabs */}
-            <div className="auth-mode-switch">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsRegister(false);
-                  setAuthError(null);
-                }}
-                className={`auth-switch-btn ${!isRegister ? 'active' : ''}`}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsRegister(true);
-                  setAuthError(null);
-                }}
-                className={`auth-switch-btn ${isRegister ? 'active' : ''}`}
-              >
-                Register
+          {/* Interactive Text-to-3D Prompt Launcher */}
+          <form onSubmit={handleLaunchWithPrompt} className="hud-prompt-box">
+            <div className="hud-prompt-input-row">
+              <input
+                type="text"
+                value={promptInput}
+                onChange={(e) => setPromptInput(e.target.value)}
+                placeholder="Describe any 3D asset (e.g. 'a round wooden table', 'a castle tower')..."
+                className="hud-prompt-input"
+              />
+              <button type="submit" className="hud-generate-btn">
+                <Sparkles className="w-4 h-4" />
+                <span>Generate 3D</span>
+                <ArrowRight className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Error Banner */}
-            {authError && (
-              <div className="auth-alert-box">
-                <span>{authError}</span>
-              </div>
-            )}
+            {/* Quick Prompt Suggestions */}
+            <div className="hud-suggestions-row">
+              <span className="text-[11px] text-slate-400 font-medium">Try:</span>
+              {SUGGESTED_PROMPTS.slice(0, 3).map((p, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleSelectSuggestion(p)}
+                  className="hud-suggestion-chip"
+                >
+                  {p.split(' ')[1] || p.split(' ')[0]}
+                </button>
+              ))}
+            </div>
+          </form>
 
-            {/* Credentials Form */}
-            <form onSubmit={handleSubmit} className="auth-input-form">
-              <div className="auth-field-group">
-                <label className="auth-label">Username</label>
-                <div className="auth-input-wrapper">
-                  <User className="w-3.5 h-3.5 text-slate-400" />
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Username"
-                    autoComplete="username"
-                    required
-                    className="auth-text-input"
-                  />
+          {/* Direct Launch & Auth Toggle Action Buttons */}
+          <div className="hud-action-row">
+            <button
+              type="button"
+              onClick={loginAsGuest}
+              className="hud-primary-launch-btn"
+            >
+              <Zap className="w-4 h-4 text-amber-300" />
+              <span>Instant Guest Access (Launch Studio)</span>
+              <ArrowRight className="w-4 h-4 text-white" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowAuthForm(!showAuthForm)}
+              className="hud-secondary-auth-btn"
+            >
+              <User className="w-3.5 h-3.5 text-slate-300" />
+              <span>{showAuthForm ? 'Hide Sign In' : 'Sign In / Register'}</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showAuthForm ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
+
+          {/* Expandable Auth Credentials Form */}
+          {showAuthForm && (
+            <div className="hud-auth-drawer">
+              <div className="auth-mode-switch">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsRegister(false);
+                    setAuthError(null);
+                  }}
+                  className={`auth-switch-btn ${!isRegister ? 'active' : ''}`}
+                >
+                  Sign In
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsRegister(true);
+                    setAuthError(null);
+                  }}
+                  className={`auth-switch-btn ${isRegister ? 'active' : ''}`}
+                >
+                  Register
+                </button>
+              </div>
+
+              {authError && (
+                <div className="auth-alert-box">
+                  <span>{authError}</span>
                 </div>
-              </div>
+              )}
 
-              {isRegister && (
+              <form onSubmit={handleAuthSubmit} className="auth-input-form mt-3">
                 <div className="auth-field-group">
-                  <label className="auth-label">Email Address</label>
+                  <label className="auth-label">Username</label>
                   <div className="auth-input-wrapper">
-                    <Mail className="w-3.5 h-3.5 text-slate-400" />
+                    <User className="w-3.5 h-3.5 text-slate-400" />
                     <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="name@polygen.ai"
-                      autoComplete="email"
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="Username"
                       required
                       className="auth-text-input"
                     />
                   </div>
                 </div>
-              )}
 
-              <div className="auth-field-group">
-                <label className="auth-label">Password</label>
-                <div className="auth-input-wrapper">
-                  <Lock className="w-3.5 h-3.5 text-slate-400" />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    autoComplete="current-password"
-                    required
-                    className="auth-text-input"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="auth-submit-action"
-              >
-                {isLoading ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="clean-spinner" />
-                    <span>Loading...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-2">
-                    <span>{isRegister ? 'Create Account' : 'Start Studio'}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                {isRegister && (
+                  <div className="auth-field-group">
+                    <label className="auth-label">Email</label>
+                    <div className="auth-input-wrapper">
+                      <Mail className="w-3.5 h-3.5 text-slate-400" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="email@domain.com"
+                        required
+                        className="auth-text-input"
+                      />
+                    </div>
                   </div>
                 )}
-              </button>
-            </form>
 
-            {/* Footer Trust Tag */}
-            <div className="auth-card-footer">
-              <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
-              <span>Infotact Solutions · 3D Generative Pipeline</span>
+                <div className="auth-field-group">
+                  <label className="auth-label">Password</label>
+                  <div className="auth-input-wrapper">
+                    <Lock className="w-3.5 h-3.5 text-slate-400" />
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      className="auth-text-input"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="auth-submit-action"
+                >
+                  {isLoading ? 'Authenticating...' : (isRegister ? 'Create Account & Enter' : 'Sign In & Enter')}
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* Micro Telemetry Pills */}
+          <div className="hud-telemetry-pills">
+            <div className="hud-pill">
+              <Box className="w-3 h-3 text-cyan-400" />
+              <span>Watertight Manifold</span>
+            </div>
+            <div className="hud-pill">
+              <Layers className="w-3 h-3 text-purple-400" />
+              <span>1024px PBR Maps</span>
+            </div>
+            <div className="hud-pill">
+              <Zap className="w-3 h-3 text-amber-400" />
+              <span>&lt; 1.0s Latency</span>
+            </div>
+            <div className="hud-pill">
+              <ShieldCheck className="w-3 h-3 text-emerald-400" />
+              <span>GLB & OBJ Export</span>
             </div>
           </div>
-        </section>
-      </main>
-
-      {/* 3D Animated Samples Showcase: "What can you build with PolyGen?" */}
-      <section className="showcase-samples-section">
-        <div className="showcase-samples-header">
-          <div className="showcase-badge">
-            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-            <span>Interactive 3D Asset Showcase</span>
-          </div>
-          <h2 className="showcase-section-title">What can you build with PolyGen?</h2>
-          <p className="showcase-section-sub">
-            From procedural armaments to industrial precision hardware, inspect interactive samples with clean topology and game-ready PBR textures.
-          </p>
         </div>
-
-        <div className="samples-track-container">
-          <div className="samples-3d-track">
-            {[...SAMPLE_CATALOG, ...SAMPLE_CATALOG].map((sample, idx) => (
-              <div key={`${sample.id}-${idx}`} className="sample-3d-card group">
-                <div className="sample-card-top">
-                  <span className="sample-card-icon">{sample.icon}</span>
-                  <span className="sample-category-tag">{sample.category}</span>
-                </div>
-                <h4 className="sample-card-title">{sample.name}</h4>
-                <p className="sample-card-prompt">{sample.prompt}</p>
-
-                <div className="sample-card-metrics">
-                  <div className="sample-metric">
-                    <span className="metric-num">{sample.faces.toLocaleString()}</span>
-                    <span className="metric-lbl">Polys</span>
-                  </div>
-                  <div className="sample-metric">
-                    <span className="metric-num">{sample.vertices.toLocaleString()}</span>
-                    <span className="metric-lbl">Verts</span>
-                  </div>
-                  <div className="sample-metric">
-                    <span className="metric-num text-emerald-400">{sample.decimation}</span>
-                    <span className="metric-lbl">QEM</span>
-                  </div>
-                </div>
-
-                <div className="sample-card-footer">
-                  <div className="sample-maps-chips">
-                    {sample.maps.map((m) => (
-                      <span key={m} className="sample-map-chip">{m}</span>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setUsername('admin');
-                      setPassword('admin');
-                      login('admin', 'admin');
-                    }}
-                    className="sample-try-btn"
-                    title="Launch sample in Studio"
-                  >
-                    <span>Inspect</span>
-                    <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      </div>
     </div>
   );
 }

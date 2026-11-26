@@ -6,55 +6,67 @@ interface ProgressBarProps {
 }
 
 const STAGES = [
-  { step: 1, title: 'Geometry Synthesis', icon: Sparkles },
-  { step: 2, title: 'QEM Decimation', icon: Scissors },
-  { step: 3, title: 'UV Parameterization', icon: Compass },
+  { step: 1, title: 'Geometry', icon: Sparkles },
+  { step: 2, title: 'Decimation', icon: Scissors },
+  { step: 3, title: 'UV Mapping', icon: Compass },
   { step: 4, title: 'PBR Texturing', icon: Paintbrush },
-  { step: 5, title: 'GLB Packaging', icon: Box }
+  { step: 5, title: 'Packaging', icon: Box }
 ];
 
 export function ProgressBar({ progressData }: ProgressBarProps) {
   if (!progressData) return null;
 
+  const isComplete = progressData.progress >= 100;
+
   return (
-    <div className="progress-banner">
-      <div className="progress-header">
+    <div className={`floating-pipeline-hud ${isComplete ? 'complete' : ''}`}>
+      <div className="pipeline-hud-top">
         <div className="flex items-center gap-2">
-          {progressData.progress < 100 ? (
-            <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
+          {isComplete ? (
+            <div className="status-badge-circle complete">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            </div>
           ) : (
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <div className="status-badge-circle running">
+              <Loader2 className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
+            </div>
           )}
-          <span className="progress-stage-title">{progressData.stage}</span>
+          <span className="pipeline-stage-title font-semibold text-xs text-slate-100">
+            {progressData.stage}
+          </span>
         </div>
-        <span className="progress-percentage">{progressData.progress}%</span>
+        <span className="font-mono text-xs font-bold text-indigo-300">
+          {progressData.progress}%
+        </span>
       </div>
 
-      <div className="progress-bar-track">
+      {/* Progress track */}
+      <div className="pipeline-track">
         <div
-          className="progress-bar-fill"
+          className="pipeline-fill"
           style={{ width: `${progressData.progress}%` }}
         />
       </div>
 
-      <p className="progress-msg">{progressData.message}</p>
+      {/* Message */}
+      <p className="pipeline-message text-[11px] text-slate-400 truncate">
+        {progressData.message}
+      </p>
 
-      {/* Steps visualization */}
-      <div className="steps-row">
+      {/* Micro Stage Pills */}
+      <div className="pipeline-steps-chips">
         {STAGES.map((s) => {
-          const isDone = progressData.step > s.step || progressData.progress === 100;
-          const isCurrent = progressData.step === s.step && progressData.progress < 100;
+          const isDone = progressData.step > s.step || isComplete;
+          const isCurrent = progressData.step === s.step && !isComplete;
           const Icon = s.icon;
 
           return (
             <div
               key={s.step}
-              className={`step-item ${isDone ? 'step-done' : isCurrent ? 'step-active' : 'step-pending'}`}
+              className={`pipeline-step-chip ${isDone ? 'done' : isCurrent ? 'active' : 'pending'}`}
             >
-              <div className="step-circle">
-                {isDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Icon className="w-3.5 h-3.5" />}
-              </div>
-              <span className="step-label">{s.title}</span>
+              <Icon className="w-2.5 h-2.5" />
+              <span>{s.title}</span>
             </div>
           );
         })}
